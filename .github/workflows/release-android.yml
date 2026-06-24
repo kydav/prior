@@ -1,0 +1,96 @@
+name: Android Release to Play Store
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.0"
+          channel: stable
+          cache: true
+
+      # ── Inject secrets ───────────────────────────────────────────────────────
+      # Required secrets:
+      #   FIREBASE_OPTIONS_DART_BASE64  — base64 -i lib/firebase_options.dart | pbcopy
+      #   GOOGLE_SERVICES_JSON_BASE64   — base64 -i android/app/google-services.json | pbcopy
+      # ────────────────────────────────────────────────────────────────────────
+      - name: Decode Firebase config
+        run: |
+          echo "${{ secrets.FIREBASE_OPTIONS_DART_BASE64 }}" | base64 --decode > lib/firebase_options.dart
+          echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 --decode > android/app/google-services.json
+
+      # ── Android signing ──────────────────────────────────────────────────────
+      # Required secrets:
+      #   RELEASE_KEYSTORE_BASE64      — base64 -i your-release-key.jks | pbcopy
+      #   KEYSTORE_STORE_PASSWORD      — keystore password
+      #   KEYSTORE_KEY_PASSWORD        — key password (often same as store password)
+      #   KEYSTORE_KEY_ALIAS           — key alias (e.g. "upload" or "release")
+      #
+      # To generate a keystore if you don't have one:
+      #   keytool -genkey -v -keystore prior-release.jks -alias upload \
+      #     -keyalg RSA -keysize 2048 -validity 10000
+      # ────────────────────────────────────────────────────────────────────────
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > android/release.keystore
+
+      - name: Write key.properties
+        run: |
+          cat > android/key.properties <<EOF
+          storePassword=${{ secrets.KEYSTORE_STORE_PASSWORD }}
+          keyPassword=${{ secrets.KEYSTORE_KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEYSTORE_KEY_ALIAS }}
+          storeFile=../release.keystore
+          EOF
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      # ── Build ────────────────────────────────────────────────────────────────
+      - name: Build release AAB
+        run: flutter build appbundle --release --build-number=${{ github.run_number }}
+
+      - name: Build release APK
+        run: flutter build apk --release --build-number=${{ github.run_number }}
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      # ── Upload to Google Play ────────────────────────────────────────────────
+      # Required secret:
+      #   GOOGLE_PLAY_SERVICE_ACCOUNT_JSON — JSON contents of a Google Play service account
+      #     1. Google Play Console → Setup → API access → Link to Google Cloud project
+      #     2. Create a service account with "Release manager" role
+      #     3. Download JSON key → paste the entire file contents as the secret value
+      # ────────────────────────────────────────────────────────────────────────
+      - name: Upload to Google Play (internal track)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: app.auaha.prior
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: internal

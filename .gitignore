@@ -49,5 +49,11 @@ app.*.map.json
 /ios/Runner/GoogleService-Info.plist
 /lib/firebase_options.dart
 
+# Android signing — injected via CI secrets
+/android/key.properties
+/android/release.keystore
+*.jks
+*.keystore
+
 # Flutter ephemeral build artifacts
 /ios/Flutter/ephemeral/

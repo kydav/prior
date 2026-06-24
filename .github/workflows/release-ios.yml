@@ -1,0 +1,112 @@
+name: iOS Release to TestFlight
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.0"
+          channel: stable
+          cache: true
+
+      # ── Inject secrets ───────────────────────────────────────────────────────
+      # Required secrets:
+      #   FIREBASE_OPTIONS_DART_BASE64     — base64 -i lib/firebase_options.dart | pbcopy
+      #   GOOGLE_SERVICE_INFO_PLIST_BASE64 — base64 -i ios/Runner/GoogleService-Info.plist | pbcopy
+      # ────────────────────────────────────────────────────────────────────────
+      - name: Decode Firebase config
+        run: |
+          echo "${{ secrets.FIREBASE_OPTIONS_DART_BASE64 }}" | base64 --decode > lib/firebase_options.dart
+          echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}" | base64 --decode > ios/Runner/GoogleService-Info.plist
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      # ── Code signing ─────────────────────────────────────────────────────────
+      # Required secrets:
+      #   DISTRIBUTION_CERTIFICATE_BASE64   — export .p12 from Keychain, then: base64 -i cert.p12 | pbcopy
+      #   DISTRIBUTION_CERTIFICATE_PASSWORD — password set when exporting .p12
+      #   PROVISIONING_PROFILE_BASE64       — download "Prior App Store" profile from developer.apple.com
+      #                                       then: base64 -i Prior_App_Store.mobileprovision | pbcopy
+      # ────────────────────────────────────────────────────────────────────────
+      - name: Import distribution certificate
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.DISTRIBUTION_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.DISTRIBUTION_CERTIFICATE_PASSWORD }}
+        run: |
+          CERT_PATH=$RUNNER_TEMP/distribution.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          echo -n "$CERTIFICATE_BASE64" | base64 --decode -o "$CERT_PATH"
+
+          security create-keychain -p "" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+      - name: Install provisioning profile
+        env:
+          PROFILE_BASE64: ${{ secrets.PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          PP_PATH=$RUNNER_TEMP/profile.mobileprovision
+          echo -n "$PROFILE_BASE64" | base64 --decode -o "$PP_PATH"
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp "$PP_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/
+
+      # ── Build ────────────────────────────────────────────────────────────────
+      - name: Build and export IPA
+        run: |
+          flutter build ipa --release \
+            --export-options-plist=ios/ExportOptions.plist \
+            --build-number=${{ github.run_number }} \
+            --verbose 2>&1 | tail -100
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then
+            find /var/folders -name '*.xcactivitylog' 2>/dev/null | sort -t/ -k7 -r | head -1 \
+              | xargs gunzip -c 2>/dev/null | strings | grep -A5 "error:" | head -80 || true
+            exit 1
+          fi
+
+      # ── Upload to TestFlight ─────────────────────────────────────────────────
+      # Required secrets:
+      #   APP_STORE_CONNECT_KEY_ID      — Key ID from App Store Connect → Users & Access → Integrations → Keys
+      #   APP_STORE_CONNECT_ISSUER_ID   — Issuer ID from the same page (UUID)
+      #   APP_STORE_CONNECT_KEY_BASE64  — download .p8 file, then: base64 -i AuthKey_XXXX.p8 | pbcopy
+      # ────────────────────────────────────────────────────────────────────────
+      - name: Upload to TestFlight
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_KEY_BASE64 }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo -n "$KEY_BASE64" | base64 --decode -o ~/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8
+
+          IPA_PATH=$(find build -name '*.ipa' | head -1)
+          echo "IPA: $IPA_PATH"
+          if [ -z "$IPA_PATH" ]; then echo "ERROR: no IPA found"; find build -type f | head -30; exit 1; fi
+
+          xcrun altool --upload-app \
+            --type ios \
+            --file "$IPA_PATH" \
+            --apiKey "$KEY_ID" \
+            --apiIssuer "$ISSUER_ID"
+
+      # ── Cleanup ──────────────────────────────────────────────────────────────
+      - name: Remove signing keychain
+        if: always()
+        run: security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
