@@ -62,10 +62,13 @@ class _WaterRightCard extends StatelessWidget {
             if (right.sourceType != null) _Row('Type', right.sourceType!),
             if (right.priorityDate != null) _Row('Priority date', right.priorityDate!),
             if (right.volumeAcreFt != null)
-              _Row('Volume', '${right.volumeAcreFt!.toStringAsFixed(1)} acre-ft/yr'),
+              _Row('Volume', '${right.volumeAcreFt!.toStringAsFixed(2)} acre-ft/yr'),
+            if (right.cfs != null)
+              _Row('Flow rate', '${right.cfs!.toStringAsFixed(3)} cfs'),
             if (right.beneficialUse != null) _Row('Use', right.beneficialUse!),
             if (right.status != null) _Row('Status', right.status!),
             if (right.ownerName != null) _Row('Owner', right.ownerName!),
+            if (right.plssLocation != null) _Row('Location', right.plssLocation!),
             if (right.divisionOfWaterRightsUrl != null) ...[
               const SizedBox(height: 12),
               OutlinedButton.icon(

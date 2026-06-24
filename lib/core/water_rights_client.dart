@@ -11,10 +11,10 @@ const _ugrcApiKey = 'UGRC-1635F681245929';
 const _plssLayer =
     'https://services1.arcgis.com/99lidPhWCzftIe9K/arcgis/rest/services/PLSS_Fabric/FeatureServer/1';
 
-// Utah DWRi Point of Diversion (POD) layer via UGRC Open SGID
-// These are queryable by proximity/section
+// Utah DWRi Points of Diversion — hosted by Utah DNR on ArcGIS Online
+// Published nightly from the Division of Water Rights operating database
 const _podLayer =
-    'https://services1.arcgis.com/99lidPhWCzftIe9K/arcgis/rest/services/WaterRights_Points/FeatureServer/0';
+    'https://services.arcgis.com/ZzrwjTRez6FJiOq4/ArcGIS/rest/services/Utah_Points_of_Diversion/FeatureServer/0';
 
 class WaterRightsClient {
   WaterRightsClient._();
