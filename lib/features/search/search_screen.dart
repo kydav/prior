@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:prior/core/parcel_layer.dart';
 import 'package:prior/core/water_rights_client.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
@@ -13,7 +14,22 @@ class SearchScreen extends ConsumerStatefulWidget {
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _searchCtrl = TextEditingController();
+  MapboxMap? _map;
   bool _searching = false;
+  bool _showingLines = false;
+
+  Future<void> _onMapCreated(MapboxMap map) async {
+    _map = map;
+    await ParcelLayer.setup(map);
+  }
+
+  Future<void> _onMapIdle(MapIdleEventData _) async {
+    if (_map == null) return;
+    final camera = await _map!.getCameraState();
+    final atZoom = camera.zoom >= 14.5;
+    if (atZoom != _showingLines) setState(() => _showingLines = atZoom);
+    await ParcelLayer.onIdle(_map!);
+  }
 
   Future<void> _searchAddress() async {
     final address = _searchCtrl.text.trim();
@@ -28,7 +44,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           SnackBar(content: Text(result.errorMessage!)),
         );
       } else {
-        context.push('/detail', extra: result.rights);
+        // Fly to the result location
+        if (result.lat != null && result.lng != null && _map != null) {
+          await _map!.flyTo(
+            CameraOptions(
+              center: Point(
+                coordinates: Position(result.lng!, result.lat!),
+              ),
+              zoom: 16,
+            ),
+            MapAnimationOptions(duration: 1200),
+          );
+        }
+        if (mounted) context.push('/detail', extra: result.rights);
       }
     } finally {
       if (mounted) setState(() => _searching = false);
@@ -72,13 +100,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       body: Stack(
         children: [
           MapWidget(
+            onMapCreated: _onMapCreated,
+            onMapIdleListener: _onMapIdle,
             onTapListener: _onMapTap,
             cameraOptions: CameraOptions(
-              // St. George, UT as default center
               center: Point(coordinates: Position(-113.583, 37.105)),
               zoom: 10,
             ),
           ),
+          // Search bar
           Positioned(
             top: 12,
             left: 12,
@@ -116,30 +146,29 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               ),
             ),
           ),
+          // Hint card at bottom
           Positioned(
             bottom: 24,
             left: 24,
             right: 24,
-            child: Column(
-              children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.water_drop, color: Colors.lightBlue),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Tap anywhere on the map or search an address to look up water rights',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ),
-                      ],
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    const Icon(Icons.water_drop, color: Colors.lightBlue),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _showingLines
+                            ? 'Tap a parcel to look up water rights'
+                            : 'Zoom in to see property lines · Tap to look up water rights',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ],
@@ -150,6 +179,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   @override
   void dispose() {
     _searchCtrl.dispose();
+    ParcelLayer.reset();
     super.dispose();
   }
 }
