@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:prior/features/auth/login_screen.dart';
+import 'package:prior/features/profile/profile_screen.dart';
 import 'package:prior/features/search/search_screen.dart';
 import 'package:prior/features/detail/detail_screen.dart';
 import 'package:prior/features/saved/saved_screen.dart';
@@ -24,5 +25,6 @@ final router = GoRouter(
       },
     ),
     GoRoute(path: '/saved', builder: (_, _) => const SavedScreen()),
+    GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
   ],
 );

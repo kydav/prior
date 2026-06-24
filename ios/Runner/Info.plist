@@ -66,6 +66,8 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Prior uses your location to look up water rights near you.</string>
 	<key>MBXAccessToken</key>
 	<string>pk.eyJ1Ijoia3lkYXYiLCJhIjoiY21xcjNid29sMGtwMzJxcHd2czd6NmQ5aSJ9.NnCfgYoj6EK8Wg9E_dJXGg</string>
 	<key>LSApplicationQueriesSchemes</key>

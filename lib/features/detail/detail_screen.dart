@@ -9,25 +9,27 @@ class DetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('${rights.length} Water Right${rights.length == 1 ? '' : 's'} Found'),
-      ),
-      body: rights.isEmpty
-          ? const Center(child: Text('No water rights found near this location.'))
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: rights.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (_, i) => _WaterRightCard(right: rights[i]),
-            ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '${rights.length} Water Right${rights.length == 1 ? '' : 's'} Found',
+        ),
+        ListView.separated(
+          shrinkWrap: true,
+          padding: const EdgeInsets.all(16),
+          itemCount: rights.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (_, i) => WaterRightCard(right: rights[i]),
+        ),
+      ],
     );
   }
 }
 
-class _WaterRightCard extends StatelessWidget {
+class WaterRightCard extends StatelessWidget {
   final WaterRight right;
-  const _WaterRightCard({required this.right});
+  const WaterRightCard({super.key, required this.right});
 
   @override
   Widget build(BuildContext context) {
@@ -51,8 +53,7 @@ class _WaterRightCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (right.isSenior)
-                  _Badge('Senior', Colors.amber),
+                if (right.isSenior) _Badge('Senior', Colors.amber),
                 if (!right.isActive && right.status != null)
                   _Badge('Inactive', Colors.grey),
               ],
@@ -60,15 +61,20 @@ class _WaterRightCard extends StatelessWidget {
             const SizedBox(height: 10),
             if (right.source != null) _Row('Source', right.source!),
             if (right.sourceType != null) _Row('Type', right.sourceType!),
-            if (right.priorityDate != null) _Row('Priority date', right.priorityDate!),
+            if (right.priorityDate != null)
+              _Row('Priority date', right.priorityDate!),
             if (right.volumeAcreFt != null)
-              _Row('Volume', '${right.volumeAcreFt!.toStringAsFixed(2)} acre-ft/yr'),
+              _Row(
+                'Volume',
+                '${right.volumeAcreFt!.toStringAsFixed(2)} acre-ft/yr',
+              ),
             if (right.cfs != null)
               _Row('Flow rate', '${right.cfs!.toStringAsFixed(3)} cfs'),
             if (right.beneficialUse != null) _Row('Use', right.beneficialUse!),
             if (right.status != null) _Row('Status', right.status!),
             if (right.ownerName != null) _Row('Owner', right.ownerName!),
-            if (right.plssLocation != null) _Row('Location', right.plssLocation!),
+            if (right.plssLocation != null)
+              _Row('Location', right.plssLocation!),
             if (right.divisionOfWaterRightsUrl != null) ...[
               const SizedBox(height: 12),
               OutlinedButton.icon(
@@ -76,7 +82,9 @@ class _WaterRightCard extends StatelessWidget {
                 label: const Text('View DWRi record'),
                 onPressed: () {
                   final url = Uri.tryParse(right.divisionOfWaterRightsUrl!);
-                  if (url != null) launchUrl(url, mode: LaunchMode.externalApplication);
+                  if (url != null) {
+                    launchUrl(url, mode: LaunchMode.externalApplication);
+                  }
                 },
               ),
             ],
@@ -101,7 +109,10 @@ class _Row extends StatelessWidget {
         children: [
           SizedBox(
             width: 110,
-            child: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+            child: Text(
+              label,
+              style: const TextStyle(color: Colors.grey, fontSize: 13),
+            ),
           ),
           Expanded(
             child: Text(
@@ -131,7 +142,11 @@ class _Badge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 11),
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w600,
+          fontSize: 11,
+        ),
       ),
     );
   }

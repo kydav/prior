@@ -43,3 +43,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase — contain project credentials, injected via CI secrets
+/android/app/google-services.json
+/ios/Runner/GoogleService-Info.plist
+/lib/firebase_options.dart
+
+# Flutter ephemeral build artifacts
+/ios/Flutter/ephemeral/

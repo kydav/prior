@@ -1,4 +1,4 @@
-package com.auaha.prior
+package app.auaha.prior
 
 import io.flutter.embedding.android.FlutterActivity
 
