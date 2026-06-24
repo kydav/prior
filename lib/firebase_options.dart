@@ -17,21 +17,23 @@ class DefaultFirebaseOptions {
     }
   }
 
-  // Replace with values from: flutterfire configure --project=prior-water-rights
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'REPLACE_ME',
-    appId: 'REPLACE_ME',
-    messagingSenderId: 'REPLACE_ME',
+    apiKey: 'AIzaSyCA0jV6eB-u7yLiGgdwV9CzQimvRx5mS54',
+    appId: '1:254436903650:ios:d2ecfb3fd3ec8d083aecbb',
+    messagingSenderId: '254436903650',
     projectId: 'prior-water-rights',
-    storageBucket: 'prior-water-rights.appspot.com',
+    storageBucket: 'prior-water-rights.firebasestorage.app',
     iosBundleId: 'com.auaha.prior',
   );
 
+  // Replace with values from: flutterfire configure --project=prior-water-rights
+
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'REPLACE_ME',
-    appId: 'REPLACE_ME',
-    messagingSenderId: 'REPLACE_ME',
+    apiKey: 'AIzaSyDDestLJV0-r01L4tnCPS45RynnwTus5rU',
+    appId: '1:254436903650:android:ff58fca0946b6fd73aecbb',
+    messagingSenderId: '254436903650',
     projectId: 'prior-water-rights',
-    storageBucket: 'prior-water-rights.appspot.com',
+    storageBucket: 'prior-water-rights.firebasestorage.app',
   );
+
 }

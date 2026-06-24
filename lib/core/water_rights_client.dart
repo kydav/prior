@@ -5,7 +5,7 @@ import 'package:prior/data/water_right.dart';
 
 // UGRC geocoding API — free key required, register at api.mapserv.utah.gov
 // For now using a placeholder; user will need to register and add their key.
-const _ugrcApiKey = 'YOUR_UGRC_API_KEY';
+const _ugrcApiKey = 'UGRC-1635F681245929';
 
 // UGRC PLSS layer — township/range/section boundaries
 const _plssLayer =
@@ -25,14 +25,20 @@ class WaterRightsClient {
     // Step 1: Geocode address to lat/lng via UGRC
     final coords = await _geocodeAddress(address);
     if (coords == null) {
-      return LookupResult.error('Could not find that address. Try including the city, e.g. "1234 Main St, St George UT"');
+      return LookupResult.error(
+        'Could not find that address. Try including the city, e.g. "1234 Main St, St George UT"',
+      );
     }
 
     return lookupByCoords(coords.$1, coords.$2, address: address);
   }
 
   /// Lookup by coordinates (from map tap)
-  Future<LookupResult> lookupByCoords(double lat, double lng, {String? address}) async {
+  Future<LookupResult> lookupByCoords(
+    double lat,
+    double lng, {
+    String? address,
+  }) async {
     // Step 2: Find PLSS section at these coordinates
     final plss = await _plssAtPoint(lat, lng);
 
@@ -74,22 +80,27 @@ class WaterRightsClient {
   }
 
   Future<String?> _plssAtPoint(double lat, double lng) async {
-    final uri = Uri.parse('$_plssLayer/query').replace(queryParameters: {
-      'geometry': '$lng,$lat',
-      'geometryType': 'esriGeometryPoint',
-      'spatialRel': 'esriSpatialRelIntersects',
-      'inSR': '4326',
-      'outFields': 'TWNSHPLAB,RANGEDIR,TWNSHPDIR,SECTIONLABEL,LABEL',
-      'returnGeometry': 'false',
-      'f': 'json',
-    });
+    final uri = Uri.parse('$_plssLayer/query').replace(
+      queryParameters: {
+        'geometry': '$lng,$lat',
+        'geometryType': 'esriGeometryPoint',
+        'spatialRel': 'esriSpatialRelIntersects',
+        'inSR': '4326',
+        'outFields': 'TWNSHPLAB,RANGEDIR,TWNSHPDIR,SECTIONLABEL,LABEL',
+        'returnGeometry': 'false',
+        'f': 'json',
+      },
+    );
     try {
       final res = await http.get(uri).timeout(const Duration(seconds: 10));
       if (res.statusCode != 200) return null;
       final json = jsonDecode(res.body) as Map<String, dynamic>;
       final features = json['features'] as List?;
       if (features == null || features.isEmpty) return null;
-      final a = (features.first as Map<String, dynamic>)['attributes'] as Map<String, dynamic>? ?? {};
+      final a =
+          (features.first as Map<String, dynamic>)['attributes']
+              as Map<String, dynamic>? ??
+          {};
       debugPrint('PLSS attrs: $a');
       final label = a['LABEL'] ?? a['TWNSHPLAB'];
       return label?.toString();
@@ -101,18 +112,20 @@ class WaterRightsClient {
 
   Future<List<WaterRight>> _waterRightsNear(double lat, double lng) async {
     // Query water rights within ~1 mile radius (roughly 0.015 degrees)
-    final uri = Uri.parse('$_podLayer/query').replace(queryParameters: {
-      'geometry': '$lng,$lat',
-      'geometryType': 'esriGeometryPoint',
-      'spatialRel': 'esriSpatialRelIntersects',
-      'inSR': '4326',
-      'distance': '1609', // 1 mile in meters
-      'units': 'esriSRUnit_Meter',
-      'outFields': '*',
-      'returnGeometry': 'true',
-      'outSR': '4326',
-      'f': 'json',
-    });
+    final uri = Uri.parse('$_podLayer/query').replace(
+      queryParameters: {
+        'geometry': '$lng,$lat',
+        'geometryType': 'esriGeometryPoint',
+        'spatialRel': 'esriSpatialRelIntersects',
+        'inSR': '4326',
+        'distance': '1609', // 1 mile in meters
+        'units': 'esriSRUnit_Meter',
+        'outFields': '*',
+        'returnGeometry': 'true',
+        'outSR': '4326',
+        'f': 'json',
+      },
+    );
     try {
       final res = await http.get(uri).timeout(const Duration(seconds: 15));
       if (res.statusCode != 200) return [];
@@ -120,7 +133,10 @@ class WaterRightsClient {
       final features = json['features'] as List? ?? [];
       debugPrint('Water rights features: ${features.length}');
       return features.map((f) {
-        final attrs = (f as Map<String, dynamic>)['attributes'] as Map<String, dynamic>? ?? {};
+        final attrs =
+            (f as Map<String, dynamic>)['attributes']
+                as Map<String, dynamic>? ??
+            {};
         final geom = f['geometry'] as Map<String, dynamic>?;
         if (geom != null) {
           attrs['LAT'] = geom['y'];
@@ -153,12 +169,12 @@ class LookupResult {
   });
 
   const LookupResult.error(String message)
-      : lat = null,
-        lng = null,
-        address = null,
-        plssDescription = null,
-        rights = const [],
-        errorMessage = message;
+    : lat = null,
+      lng = null,
+      address = null,
+      plssDescription = null,
+      rights = const [],
+      errorMessage = message;
 
   bool get hasError => errorMessage != null;
 }

@@ -1,0 +1,30 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "prior-water-rights",
+          "appId": "1:254436903650:android:ff58fca0946b6fd73aecbb",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "prior-water-rights",
+          "appId": "1:254436903650:ios:d2ecfb3fd3ec8d083aecbb",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "prior-water-rights",
+          "configurations": {
+            "android": "1:254436903650:android:ff58fca0946b6fd73aecbb",
+            "ios": "1:254436903650:ios:d2ecfb3fd3ec8d083aecbb"
+          }
+        }
+      }
+    }
+  }
+}
