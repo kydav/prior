@@ -26,13 +26,18 @@ jobs:
 
       # ── Inject secrets ───────────────────────────────────────────────────────
       # Required secrets:
-      #   FIREBASE_OPTIONS_DART_BASE64  — base64 -i lib/firebase_options.dart | pbcopy
+      #   FIREBASE_OPTIONS_DART  — base64 -i lib/firebase_options.dart | pbcopy
       #   GOOGLE_SERVICES_JSON_BASE64   — base64 -i android/app/google-services.json | pbcopy
       # ────────────────────────────────────────────────────────────────────────
       - name: Decode Firebase config
+        env:
+          FIREBASE_OPTIONS: ${{ secrets.FIREBASE_OPTIONS_DART }}
+          GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
-          echo "${{ secrets.FIREBASE_OPTIONS_DART_BASE64 }}" | base64 --decode > lib/firebase_options.dart
-          echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 --decode > android/app/google-services.json
+          if [ -z "$FIREBASE_OPTIONS" ]; then echo "ERROR: FIREBASE_OPTIONS_DART secret is not set"; exit 1; fi
+          if [ -z "$GOOGLE_SERVICES" ]; then echo "ERROR: GOOGLE_SERVICES_JSON secret is not set"; exit 1; fi
+          echo "$FIREBASE_OPTIONS" | base64 --decode > lib/firebase_options.dart
+          echo "$GOOGLE_SERVICES" | base64 --decode > android/app/google-services.json
 
       # ── Android signing ──────────────────────────────────────────────────────
       # Required secrets:

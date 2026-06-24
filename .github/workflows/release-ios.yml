@@ -25,12 +25,12 @@ jobs:
 
       # ── Inject secrets ───────────────────────────────────────────────────────
       # Required secrets:
-      #   FIREBASE_OPTIONS_DART_BASE64     — base64 -i lib/firebase_options.dart | pbcopy
+      #   FIREBASE_OPTIONS_DART     — base64 -i lib/firebase_options.dart | pbcopy
       #   GOOGLE_SERVICE_INFO_PLIST_BASE64 — base64 -i ios/Runner/GoogleService-Info.plist | pbcopy
       # ────────────────────────────────────────────────────────────────────────
       - name: Decode Firebase config
         run: |
-          echo "${{ secrets.FIREBASE_OPTIONS_DART_BASE64 }}" | base64 --decode > lib/firebase_options.dart
+          echo "${{ secrets.FIREBASE_OPTIONS_DART }}" | base64 --decode > lib/firebase_options.dart
           echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}" | base64 --decode > ios/Runner/GoogleService-Info.plist
 
       - name: Install Flutter dependencies
