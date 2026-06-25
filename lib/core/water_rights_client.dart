@@ -21,8 +21,7 @@ const _utahLirBase =
 // ── Colorado ──────────────────────────────────────────────────────────────────
 const _coParcelUrl =
     'https://gis.colorado.gov/public/rest/services/Address_and_Parcel/Colorado_Public_Parcels/FeatureServer/0';
-const _cdssStructuresUrl =
-    'https://dwr.state.co.us/Rest/GET/api/v2/structures';
+const _cdssStructuresUrl = 'https://dwr.state.co.us/Rest/GET/api/v2/structures';
 
 // ── National ──────────────────────────────────────────────────────────────────
 // BLM national PLSS — layer 2 = sections (first divisions)
@@ -92,14 +91,20 @@ class WaterRightsClient {
       case _State.unknown:
         // Try Utah then Colorado parcel services as fallback
         final result = await _lookupUtah(lat, lng, address: address);
-        if (result.parcelInfo != null || result.rights.isNotEmpty) return result;
+        if (result.parcelInfo != null || result.rights.isNotEmpty) {
+          return result;
+        }
         return _lookupColorado(lat, lng, address: address);
     }
   }
 
   // ── Utah ───────────────────────────────────────────────────────────────────
 
-  Future<LookupResult> _lookupUtah(double lat, double lng, {String? address}) async {
+  Future<LookupResult> _lookupUtah(
+    double lat,
+    double lng, {
+    String? address,
+  }) async {
     final plssFuture = _plssAtPoint(lat, lng);
     final parcelFuture = _utahParcelBasic(lat, lng);
     final plss = await plssFuture;
@@ -194,20 +199,21 @@ class WaterRightsClient {
   ) async {
     if (county == null) return null;
     final svc = _utahLirServiceName(county);
-    final uri = Uri.parse(
-      '$_utahLirBase/Parcels_${svc}_LIR/FeatureServer/0/query',
-    ).replace(
-      queryParameters: {
-        'geometry': '$lng,$lat',
-        'geometryType': 'esriGeometryPoint',
-        'spatialRel': 'esriSpatialRelIntersects',
-        'inSR': '4326',
-        'outFields':
-            'PARCEL_ACRES,TOTAL_MKT_VALUE,BLDG_SQFT,BUILT_YR,SUBDIV_NAME,PROP_CLASS,PRIMARY_RES,ASSESSOR_SRC',
-        'returnGeometry': 'false',
-        'f': 'json',
-      },
-    );
+    final uri =
+        Uri.parse(
+          '$_utahLirBase/Parcels_${svc}_LIR/FeatureServer/0/query',
+        ).replace(
+          queryParameters: {
+            'geometry': '$lng,$lat',
+            'geometryType': 'esriGeometryPoint',
+            'spatialRel': 'esriSpatialRelIntersects',
+            'inSR': '4326',
+            'outFields':
+                'PARCEL_ACRES,TOTAL_MKT_VALUE,BLDG_SQFT,BUILT_YR,SUBDIV_NAME,PROP_CLASS,PRIMARY_RES,ASSESSOR_SRC',
+            'returnGeometry': 'false',
+            'f': 'json',
+          },
+        );
     try {
       final res = await http.get(uri).timeout(const Duration(seconds: 10));
       if (res.statusCode != 200) return null;
@@ -263,7 +269,9 @@ class WaterRightsClient {
       };
     }
 
-    final uri = Uri.parse('$_utahPodUrl/query').replace(queryParameters: params);
+    final uri = Uri.parse(
+      '$_utahPodUrl/query',
+    ).replace(queryParameters: params);
     try {
       final res = await http.get(uri).timeout(const Duration(seconds: 15));
       if (res.statusCode != 200) return [];
@@ -272,7 +280,9 @@ class WaterRightsClient {
 
       final rights = features.map((f) {
         final attrs =
-            (f as Map<String, dynamic>)['attributes'] as Map<String, dynamic>? ?? {};
+            (f as Map<String, dynamic>)['attributes']
+                as Map<String, dynamic>? ??
+            {};
         final geom = f['geometry'] as Map<String, dynamic>?;
         if (geom != null) {
           attrs['LAT'] = geom['y'];
@@ -293,7 +303,11 @@ class WaterRightsClient {
 
   // ── Colorado ───────────────────────────────────────────────────────────────
 
-  Future<LookupResult> _lookupColorado(double lat, double lng, {String? address}) async {
+  Future<LookupResult> _lookupColorado(
+    double lat,
+    double lng, {
+    String? address,
+  }) async {
     final plssFuture = _plssAtPoint(lat, lng);
     final parcelFuture = _coloradoParcelBasic(lat, lng);
     final plss = await plssFuture;
@@ -360,7 +374,10 @@ class WaterRightsClient {
         county: attrs['countyName']?.toString(),
         ownType: attrs['owner']?.toString(),
         polygonJson: rings != null
-            ? jsonEncode({'rings': rings, 'spatialReference': {'wkid': 4326}})
+            ? jsonEncode({
+                'rings': rings,
+                'spatialReference': {'wkid': 4326},
+              })
             : '{}',
         acres: (attrs['landAcres'] as num?)?.toDouble(),
         marketValue: (attrs['apprValTot'] as num?)?.toDouble(),
@@ -425,16 +442,13 @@ class WaterRightsClient {
       if (features == null || features.isEmpty) return null;
       final a =
           (features.first as Map<String, dynamic>)['attributes']
-              as Map<String, dynamic>? ?? {};
+              as Map<String, dynamic>? ??
+          {};
       final section = a['FRSTDIVNO']?.toString();
       final twnshp = a['TWNSHPLAB']?.toString();
       final pm = a['PRINMER']?.toString();
       if (section == null && twnshp == null) return null;
-      final parts = [
-        if (section != null) 'Sec. $section',
-        if (twnshp != null) twnshp,
-        if (pm != null) pm,
-      ];
+      final parts = [if (section != null) 'Sec. $section', ?twnshp, ?pm];
       return parts.join(', ');
     } catch (e) {
       debugPrint('PLSS error: $e');
@@ -481,7 +495,8 @@ class WaterRightsClient {
   Future<(double, double)?> _parcelCenterUtah(String parcelId) async {
     final uri = Uri.parse('$_utahParcelUrl/query').replace(
       queryParameters: {
-        'where': "UPPER(PARCEL_ID)='${parcelId.toUpperCase().replaceAll("'", "''")}'",
+        'where':
+            "UPPER(PARCEL_ID)='${parcelId.toUpperCase().replaceAll("'", "''")}'",
         'outFields': 'PARCEL_ID',
         'returnGeometry': 'true',
         'returnCentroid': 'true',
@@ -522,7 +537,8 @@ class WaterRightsClient {
   Future<(double, double)?> _parcelCenterColorado(String parcelId) async {
     final uri = Uri.parse('$_coParcelUrl/query').replace(
       queryParameters: {
-        'where': "UPPER(parcel_id)='${parcelId.toUpperCase().replaceAll("'", "''")}'",
+        'where':
+            "UPPER(parcel_id)='${parcelId.toUpperCase().replaceAll("'", "''")}'",
         'outFields': 'parcel_id',
         'returnGeometry': 'true',
         'returnCentroid': 'true',
