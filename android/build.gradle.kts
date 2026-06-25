@@ -20,9 +20,10 @@ subprojects {
 }
 
 // Force all plugin subprojects to compile against SDK 36
-subprojects {
-    plugins.withId("com.android.library") {
-        extensions.getByType(com.android.build.gradle.LibraryExtension::class).compileSdk = 36
+gradle.projectsEvaluated {
+    subprojects {
+        extensions.findByType(com.android.build.gradle.BaseExtension::class.java)
+            ?.compileSdkVersion(36)
     }
 }
 
