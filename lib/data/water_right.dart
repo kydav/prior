@@ -1,3 +1,7 @@
+extension on String {
+  String? get nullIfEmpty => isEmpty ? null : this;
+}
+
 // Field reference for Utah_Points_of_Diversion (services.arcgis.com/ZzrwjTRez6FJiOq4):
 // WRNUM, OWNER, SOURCE, TYPE (Surface/Underground), PRIORITY (YYYYMMDD int),
 // STATUS (Approved/Perfected/Unapproved/Lapsed/Expired/etc),
@@ -103,6 +107,56 @@ class WaterRight {
       podLat: (attrs['LAT'] as num?)?.toDouble(),
       podLng: (attrs['LNG'] as num?)?.toDouble(),
       divisionOfWaterRightsUrl: webLink,
+      raw: attrs,
+    );
+  }
+
+  // Colorado CDSS structures endpoint
+  factory WaterRight.fromCdss(Map<String, dynamic> attrs) {
+    String? f(String key) {
+      final v = attrs[key];
+      if (v == null || v.toString().trim().isEmpty || v.toString() == 'null') return null;
+      return v.toString().trim();
+    }
+
+    final wdid = f('wdid') ?? '';
+    final structureType = f('structureType') ?? '';
+    final sourceType = structureType == 'WELL' ? 'Underground' : 'Surface';
+
+    // ciuCode: A=Active, H=Historical, C=Conditionally Active, U=Unknown
+    final ciuCode = f('ciuCode') ?? '';
+    final status = switch (ciuCode) {
+      'A' => 'Active',
+      'H' => 'Historical',
+      'C' => 'Conditional',
+      'U' => 'Unknown',
+      _ => ciuCode.isNotEmpty ? ciuCode : null,
+    };
+
+    final lat = (attrs['latdecdeg'] as num?)?.toDouble();
+    final lng = (attrs['longdecdeg'] as num?)?.toDouble();
+
+    return WaterRight(
+      rightNumber: wdid,
+      source: f('waterSource'),
+      sourceType: sourceType,
+      priorityDate: null, // requires separate waterrights/netamount call
+      volumeAcreFt: null,
+      cfs: null,
+      beneficialUse: null,
+      status: status,
+      ownerName: null,
+      plssLocation: [
+        if (f('pm') != null) f('pm'),
+        if (f('township') != null && f('range') != null)
+          'T${f('township')} R${f('range')}',
+        if (f('section') != null) 'Sec. ${f('section')}',
+      ].join(', ').nullIfEmpty,
+      podLat: lat,
+      podLng: lng,
+      divisionOfWaterRightsUrl: wdid.isNotEmpty
+          ? 'https://dwr.state.co.us/Tools/Structures/$wdid'
+          : null,
       raw: attrs,
     );
   }
