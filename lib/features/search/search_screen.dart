@@ -195,9 +195,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
           // Search bar
           Positioned(
-            bottom: 24,
-            left: 12,
-            right: 12,
+            bottom: 80,
+            left: 16,
+            right: 16,
             child: Material(
               elevation: 4,
               borderRadius: BorderRadius.circular(12),
@@ -234,7 +234,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           // Map type button
           Positioned(
             right: 16,
-            bottom: 148,
+            bottom: 180,
             child: FloatingActionButton.small(
               heroTag: 'maptype',
               onPressed: _showStyleSheet,
@@ -245,7 +245,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           // Current location button
           Positioned(
             right: 16,
-            bottom: 100,
+            bottom: 135,
             child: FloatingActionButton.small(
               heroTag: 'location',
               onPressed: _locating ? null : _goToCurrentLocation,

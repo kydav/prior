@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -66,7 +67,10 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           ListTile(
-            leading: const Icon(Icons.delete_forever_outlined, color: Colors.red),
+            leading: const Icon(
+              Icons.delete_forever_outlined,
+              color: Colors.red,
+            ),
             title: const Text(
               'Delete account',
               style: TextStyle(color: Colors.red),
@@ -83,9 +87,9 @@ class ProfileScreen extends StatelessWidget {
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Reset link sent to $email')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Reset link sent to $email')));
     } on FirebaseAuthException catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -113,13 +117,12 @@ class ProfileScreen extends StatelessWidget {
     );
     if (confirmed != true) return;
     await FirebaseAuth.instance.signOut();
+    if (!context.mounted) return;
+    context.go('/login');
     // Router redirect handles navigation to /login
   }
 
-  Future<void> _confirmDeleteAccount(
-    BuildContext context,
-    String email,
-  ) async {
+  Future<void> _confirmDeleteAccount(BuildContext context, String email) async {
     final passCtrl = TextEditingController();
     final confirmed = await showDialog<bool>(
       context: context,
@@ -164,7 +167,10 @@ class ProfileScreen extends StatelessWidget {
 
     try {
       final user = FirebaseAuth.instance.currentUser!;
-      final cred = EmailAuthProvider.credential(email: email, password: password);
+      final cred = EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
       await user.reauthenticateWithCredential(cred);
       await user.delete();
       // Router redirect handles navigation to /login

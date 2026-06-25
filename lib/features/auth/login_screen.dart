@@ -30,15 +30,20 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       if (_isSignUp) {
         await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: email, password: password,
+          email: email,
+          password: password,
         );
       } else {
         await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: email, password: password,
+          email: email,
+          password: password,
         );
       }
       if (mounted) context.go('/');
@@ -70,17 +75,17 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const SizedBox(height: 60),
               Text(
-                'Prior',
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                'Prior App(ropriation)',
+                style: Theme.of(
+                  context,
+                ).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
                 'Water rights lookup',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
               ),
               const SizedBox(height: 48),
               TextField(
@@ -100,20 +105,29 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 16),
                 TextField(
                   controller: _confirmPassCtrl,
-                  decoration: const InputDecoration(labelText: 'Confirm password'),
+                  decoration: const InputDecoration(
+                    labelText: 'Confirm password',
+                  ),
                   obscureText: true,
                   onSubmitted: (_) => _submit(),
                 ),
               ],
               if (_error != null) ...[
                 const SizedBox(height: 12),
-                Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+                Text(
+                  _error!,
+                  style: const TextStyle(color: Colors.red, fontSize: 13),
+                ),
               ],
               const SizedBox(height: 24),
               FilledButton(
                 onPressed: _loading ? null : _submit,
                 child: _loading
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : Text(_isSignUp ? 'Create account' : 'Sign in'),
               ),
               const SizedBox(height: 16),
@@ -121,11 +135,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    _isSignUp ? 'Already have an account?' : "Don't have an account?",
+                    _isSignUp
+                        ? 'Already have an account?'
+                        : "Don't have an account?",
                     style: const TextStyle(color: Colors.grey),
                   ),
                   TextButton(
-                    onPressed: () => setState(() { _isSignUp = !_isSignUp; _error = null; }),
+                    onPressed: () => setState(() {
+                      _isSignUp = !_isSignUp;
+                      _error = null;
+                    }),
                     child: Text(_isSignUp ? 'Sign in' : 'Sign up'),
                   ),
                 ],
