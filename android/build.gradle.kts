@@ -19,6 +19,15 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+// Force all plugin subprojects to compile against SDK 36
+subprojects {
+    afterEvaluate {
+        if (extensions.findByName("android") != null) {
+            extensions.getByType(com.android.build.gradle.BaseExtension::class).compileSdkVersion(36)
+        }
+    }
+}
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
