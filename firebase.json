@@ -4,14 +4,14 @@
       "android": {
         "default": {
           "projectId": "prior-water-rights",
-          "appId": "1:254436903650:android:ff58fca0946b6fd73aecbb",
+          "appId": "1:254436903650:android:5cbeca29f9fb4d723aecbb",
           "fileOutput": "android/app/google-services.json"
         }
       },
       "ios": {
         "default": {
           "projectId": "prior-water-rights",
-          "appId": "1:254436903650:ios:d2ecfb3fd3ec8d083aecbb",
+          "appId": "1:254436903650:ios:64212c1dde9ab9f83aecbb",
           "uploadDebugSymbols": false,
           "fileOutput": "ios/Runner/GoogleService-Info.plist"
         }
@@ -20,8 +20,8 @@
         "lib/firebase_options.dart": {
           "projectId": "prior-water-rights",
           "configurations": {
-            "android": "1:254436903650:android:ff58fca0946b6fd73aecbb",
-            "ios": "1:254436903650:ios:d2ecfb3fd3ec8d083aecbb"
+            "android": "1:254436903650:android:5cbeca29f9fb4d723aecbb",
+            "ios": "1:254436903650:ios:64212c1dde9ab9f83aecbb"
           }
         }
       }
