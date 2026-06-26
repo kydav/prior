@@ -23,6 +23,9 @@ String? _parcelUrlForCenter(double lat, double lng) {
   return null;
 }
 
+bool _isColoradoCenter(double lat, double lng) =>
+    lat >= 36.99 && lat <= 41.01 && lng >= -109.07 && lng <= -102.03;
+
 class ParcelLayer {
   ParcelLayer._();
 
@@ -187,6 +190,9 @@ class ParcelLayer {
       _client = null;
     }
   }
+
+  static bool isColorado(double lat, double lng) =>
+      _isColoradoCenter(lat, lng);
 
   static void cancelFetch() {
     _client?.close();

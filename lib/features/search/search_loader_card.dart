@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:prior/core/parcel_layer.dart';
+import 'package:prior/core/water_rights_client.dart';
 
 class SearchLoaderCard extends StatefulWidget {
   const SearchLoaderCard({super.key});
@@ -51,6 +53,13 @@ class _SearchLoaderCardState extends State<SearchLoaderCard> {
               SizedBox(height: 8),
               Text('Please be patient,'),
               Text('as we are limited by the state database.'),
+              TextButton(
+                onPressed: () {
+                  ParcelLayer.cancelFetch();
+                  WaterRightsClient.instance.cancelColoradoLookup();
+                },
+                child: const Text('Cancel'),
+              ),
             ],
           ],
         ),

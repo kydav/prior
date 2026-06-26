@@ -28,6 +28,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   bool _showingLines = false;
   bool _locating = false;
   String _currentStyle = MapboxStyles.STANDARD;
+  static bool _coSlownessShown = false;
 
   Future<void> _onMapCreated(MapboxMap map) async {
     _map = map;
@@ -56,7 +57,35 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final camera = await _map!.getCameraState();
     final atZoom = camera.zoom >= 12.5;
     if (atZoom != _showingLines) setState(() => _showingLines = atZoom);
+
+    final center = camera.center.coordinates;
+    if (!_coSlownessShown &&
+        ParcelLayer.isColorado(center.lat.toDouble(), center.lng.toDouble())) {
+      _coSlownessShown = true;
+      if (mounted) _showColoradoSlownessDialog();
+    }
+
     await ParcelLayer.onIdle(_map!);
+  }
+
+  void _showColoradoSlownessDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Colorado parcel data'),
+        content: const Text(
+          'Colorado\'s state GIS service is significantly slower than other states. '
+          'Parcel boundary lines and parcel details can take up to a minute to load. '
+          'Tap the info icon on the map to check status or cancel a slow request.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _goToCurrentLocation() async {
