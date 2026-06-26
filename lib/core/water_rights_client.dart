@@ -87,6 +87,7 @@ class WaterRightsClient {
     double lat,
     double lng, {
     String? address,
+    Map<String, dynamic>? tileParcel,
   }) async {
     final state = _detectState(lat, lng);
 
@@ -94,9 +95,8 @@ class WaterRightsClient {
       case _State.utah:
         return _lookupUtah(lat, lng, address: address);
       case _State.colorado:
-        return _lookupColorado(lat, lng, address: address);
+        return _lookupColorado(lat, lng, address: address, tileParcel: tileParcel);
       case _State.unknown:
-        // Try Utah then Colorado parcel services as fallback
         final result = await _lookupUtah(lat, lng, address: address);
         if (result.parcelInfo != null || result.rights.isNotEmpty) {
           return result;
@@ -314,12 +314,32 @@ class WaterRightsClient {
     double lat,
     double lng, {
     String? address,
+    Map<String, dynamic>? tileParcel,
   }) async {
     final plssFuture = _plssAtPoint(lat, lng);
-    final parcelFuture = _coloradoParcelBasic(lat, lng);
     final rightsFuture = _coloradoWaterRights(lat, lng);
+
+    // If attributes came from the local vector tile, skip the slow ArcGIS call.
+    final _BasicParcel? basic;
+    if (tileParcel != null) {
+      basic = _BasicParcel(
+        parcelId: tileParcel['parcel_id']?.toString() ?? '',
+        address: tileParcel['situsAdd']?.toString(),
+        city: tileParcel['sitAddCty']?.toString(),
+        zip: tileParcel['sitAddZip']?.toString(),
+        county: tileParcel['countyName']?.toString(),
+        ownType: tileParcel['owner']?.toString(),
+        polygonJson: '{}',
+        acres: (tileParcel['landAcres'] as num?)?.toDouble(),
+        marketValue: double.tryParse(tileParcel['apprValTot']?.toString() ?? ''),
+        subdivName: tileParcel['subName']?.toString(),
+        propClass: tileParcel['landUseDsc']?.toString(),
+      );
+    } else {
+      basic = await _coloradoParcelBasic(lat, lng);
+    }
+
     final plss = await plssFuture;
-    final basic = await parcelFuture;
     final rights = await rightsFuture;
 
     final parcelInfo = basic != null

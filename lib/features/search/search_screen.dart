@@ -28,7 +28,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   bool _showingLines = false;
   bool _locating = false;
   String _currentStyle = MapboxStyles.STANDARD;
-  static bool _coSlownessShown = false;
 
   Future<void> _onMapCreated(MapboxMap map) async {
     _map = map;
@@ -36,11 +35,25 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       TapInteraction.onMap((ctx) async {
         if (_searching || !_showingLines) return;
         final coord = ctx.point.coordinates;
+        final lat = coord.lat.toDouble();
+        final lng = coord.lng.toDouble();
         await _runQuery(
-          () => WaterRightsClient.instance.lookupByCoords(
-            coord.lat.toDouble(),
-            coord.lng.toDouble(),
-          ),
+          () async {
+            // For Colorado, read parcel attributes from the rendered vector tile
+            // (instant, local) rather than hitting the slow ArcGIS endpoint.
+            Map<String, dynamic>? tileParcel;
+            if (ParcelLayer.isColorado(lat, lng) && _map != null) {
+              tileParcel = await ParcelLayer.queryProperties(
+                _map!,
+                ctx.touchPosition,
+              );
+            }
+            return WaterRightsClient.instance.lookupByCoords(
+              lat,
+              lng,
+              tileParcel: tileParcel,
+            );
+          },
           isTap: true,
         );
       }),
@@ -58,34 +71,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final atZoom = camera.zoom >= 12.5;
     if (atZoom != _showingLines) setState(() => _showingLines = atZoom);
 
-    final center = camera.center.coordinates;
-    if (!_coSlownessShown &&
-        ParcelLayer.isColorado(center.lat.toDouble(), center.lng.toDouble())) {
-      _coSlownessShown = true;
-      if (mounted) _showColoradoSlownessDialog();
-    }
-
     await ParcelLayer.onIdle(_map!);
-  }
-
-  void _showColoradoSlownessDialog() {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Colorado parcel data'),
-        content: const Text(
-          'Colorado\'s state GIS service is significantly slower than other states. '
-          'Parcel boundary lines and parcel details can take up to a minute to load. '
-          'Tap the info icon on the map to check status or cancel a slow request.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Got it'),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<void> _goToCurrentLocation() async {
@@ -276,8 +262,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       builder: (ctx) => AlertDialog(
                         title: const Text('Loading parcel boundaries'),
                         content: const Text(
-                          'Parcel boundaries are fetched from the state GIS service, '
-                          'which can be slow (up to a minute for Colorado). '
+                          'Parcel boundaries are being fetched from the state GIS service. '
                           'The map will update automatically when the data arrives.',
                         ),
                         actions: [
