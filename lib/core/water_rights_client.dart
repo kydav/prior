@@ -48,6 +48,13 @@ class WaterRightsClient {
   WaterRightsClient._();
   static final instance = WaterRightsClient._();
 
+  http.Client? _coParcelClient;
+
+  void cancelColoradoLookup() {
+    _coParcelClient?.close();
+    _coParcelClient = null;
+  }
+
   Future<LookupResult> lookupByAddress(String rawInput) async {
     final input = rawInput.trim();
 
@@ -310,10 +317,10 @@ class WaterRightsClient {
   }) async {
     final plssFuture = _plssAtPoint(lat, lng);
     final parcelFuture = _coloradoParcelBasic(lat, lng);
+    final rightsFuture = _coloradoWaterRights(lat, lng);
     final plss = await plssFuture;
     final basic = await parcelFuture;
-
-    final rights = await _coloradoWaterRights(lat, lng);
+    final rights = await rightsFuture;
 
     final parcelInfo = basic != null
         ? ParcelInfo(
@@ -355,8 +362,11 @@ class WaterRightsClient {
         'f': 'json',
       },
     );
+    _coParcelClient = http.Client();
     try {
-      final res = await http.get(uri).timeout(const Duration(seconds: 10));
+      final res = await _coParcelClient!
+          .get(uri)
+          .timeout(const Duration(seconds: 90));
       if (res.statusCode != 200) return null;
       final json = jsonDecode(res.body) as Map<String, dynamic>;
       final features = json['features'] as List?;
@@ -380,13 +390,16 @@ class WaterRightsClient {
               })
             : '{}',
         acres: (attrs['landAcres'] as num?)?.toDouble(),
-        marketValue: (attrs['apprValTot'] as num?)?.toDouble(),
+        marketValue: double.tryParse(attrs['apprValTot']?.toString() ?? ''),
         subdivName: attrs['subName']?.toString(),
         propClass: attrs['landUseDsc']?.toString(),
       );
     } catch (e) {
       debugPrint('Colorado parcel error: $e');
       return null;
+    } finally {
+      _coParcelClient?.close();
+      _coParcelClient = null;
     }
   }
 

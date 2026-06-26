@@ -6,6 +6,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:prior/core/parcel_layer.dart';
 import 'package:prior/core/water_rights_client.dart';
 import 'package:prior/features/detail/detail_screen.dart' show WaterRightCard;
+import 'package:prior/features/search/search_loader_card.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
@@ -231,6 +232,68 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               ),
             ),
           ),
+          // Parcel fetch indicator
+          Positioned(
+            right: 20,
+            bottom: 225,
+            child: ValueListenableBuilder<bool>(
+              valueListenable: ParcelLayer.isFetching,
+              builder: (context, fetching, _) {
+                if (!fetching || !_showingLines) return const SizedBox.shrink();
+                return GestureDetector(
+                  onTap: () {
+                    showDialog<void>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Loading parcel boundaries'),
+                        content: const Text(
+                          'Parcel boundaries are fetched from the state GIS service, '
+                          'which can be slow (up to a minute for Colorado). '
+                          'The map will update automatically when the data arrives.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () {
+                              ParcelLayer.cancelFetch();
+                              WaterRightsClient.instance.cancelColoradoLookup();
+                              Navigator.pop(ctx);
+                            },
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('OK'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  child: SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        const SizedBox(
+                          width: 36,
+                          height: 36,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.blue,
+                          ),
+                        ),
+                        const Icon(
+                          Icons.info_outline,
+                          color: Colors.blue,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
           // Map type button
           Positioned(
             right: 16,
@@ -263,21 +326,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           if (_searching)
             Container(
               color: Colors.black45,
-              child: const Center(
-                child: Card(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 16),
-                        Text('Looking up water rights…'),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+              child: const Center(child: SearchLoaderCard()),
             ),
         ],
       ),
@@ -441,9 +490,29 @@ class _ParcelInfoSheet extends StatelessWidget {
                 context,
               ).textTheme.bodyMedium?.copyWith(color: Colors.grey[400]),
             ),
+        ] else if (info?.parcelId != null && info!.parcelId.isNotEmpty) ...[
+          Text(
+            'Parcel ${info.parcelId}',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+        ] else if (result?.lat != null && result?.lng != null) ...[
+          Text(
+            '${result!.lat!.toStringAsFixed(5)}, ${result!.lng!.toStringAsFixed(5)}',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          Text(
+            'Parcel data unavailable',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
+          ),
         ] else
           Text(
-            'Parcel ${info?.parcelId ?? 'Unknown'}',
+            'Unknown location',
             style: Theme.of(
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
