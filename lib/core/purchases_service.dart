@@ -1,12 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 // Set this to your RevenueCat API key from the RC dashboard.
-const kRcApiKey = 'REPLACE_WITH_REVENUECAT_API_KEY';
+final kRcApiKey = Platform.isIOS
+    ? 'appl_pWCEVUfkvhcAmjUrkJKPJWDssTH'
+    : 'goog_NNTOeRWLDWDDCIVJpqZdoFQGYzM';
 
 // Must match the entitlement identifier you create in RevenueCat.
-const kProEntitlement = 'pro';
+const kProEntitlement = 'Prior Pro';
 
 Future<void> initPurchases() async {
   await Purchases.setLogLevel(kDebugMode ? LogLevel.debug : LogLevel.error);

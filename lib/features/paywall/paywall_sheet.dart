@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:prior/core/lookup_counter.dart';
 import 'package:prior/core/purchases_service.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 Future<void> showPaywallSheet(BuildContext context) {
   return showModalBottomSheet(
@@ -37,8 +38,14 @@ class _PaywallSheetState extends ConsumerState<_PaywallSheet> {
     try {
       final offerings = await Purchases.getOfferings();
       final pkg = offerings.current?.availablePackages.firstOrNull;
-      if (mounted) setState(() { _package = pkg; _loadingPackage = false; });
+      if (mounted) {
+        setState(() {
+          _package = pkg;
+          _loadingPackage = false;
+        });
+      }
     } catch (e) {
+      debugPrint('RevenueCat error: $e');
       if (mounted) setState(() => _loadingPackage = false);
     }
   }
@@ -84,9 +91,9 @@ class _PaywallSheetState extends ConsumerState<_PaywallSheet> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -107,7 +114,8 @@ class _PaywallSheetState extends ConsumerState<_PaywallSheet> {
         children: [
           // Handle
           Container(
-            width: 40, height: 4,
+            width: 40,
+            height: 4,
             decoration: BoxDecoration(
               color: Colors.grey[600],
               borderRadius: BorderRadius.circular(2),
@@ -120,16 +128,16 @@ class _PaywallSheetState extends ConsumerState<_PaywallSheet> {
 
           Text(
             'Go Unlimited',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
             'You\'ve used your ${LookupCounter.freeLimit} free lookups this month.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: cs.onSurfaceVariant,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -174,7 +182,8 @@ class _PaywallSheetState extends ConsumerState<_PaywallSheet> {
               onPressed: (_purchasing || _loadingPackage) ? null : _purchase,
               child: _purchasing
                   ? const SizedBox(
-                      height: 20, width: 20,
+                      height: 20,
+                      width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Text('Unlock unlimited lookups'),
@@ -185,10 +194,59 @@ class _PaywallSheetState extends ConsumerState<_PaywallSheet> {
             onPressed: _restoring ? null : _restore,
             child: _restoring
                 ? const SizedBox(
-                    height: 16, width: 16,
+                    height: 16,
+                    width: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Text('Restore purchases'),
+          ),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextButton(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: () => launchUrl(
+                  Uri.parse('https://auaha.app/prior/terms'),
+                  mode: LaunchMode.externalApplication,
+                ),
+                child: Text(
+                  'Terms of Use',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+              Text(
+                '·',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+              ),
+              TextButton(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: () => launchUrl(
+                  Uri.parse('https://auaha.app/prior/privacy'),
+                  mode: LaunchMode.externalApplication,
+                ),
+                child: Text(
+                  'Privacy Policy',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
