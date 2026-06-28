@@ -17,6 +17,8 @@ dependencies:
   http: ^1.4.0
   mapbox_maps_flutter: ^2.5.0
   geolocator: ^13.0.2
+  purchases_flutter: ^10.2.3
+  shared_preferences: ^2.5.3
   url_launcher: ^6.3.1
   uuid: ^4.5.1
 

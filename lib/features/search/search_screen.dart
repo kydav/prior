@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:go_router/go_router.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:prior/core/lookup_counter.dart';
 import 'package:prior/core/parcel_layer.dart';
+import 'package:prior/core/purchases_service.dart';
 import 'package:prior/core/water_rights_client.dart';
 import 'package:prior/features/detail/detail_screen.dart' show WaterRightCard;
+import 'package:prior/features/paywall/paywall_sheet.dart';
 import 'package:prior/features/search/search_loader_card.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -127,11 +130,27 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     Future<LookupResult> Function() queryFn, {
     bool isTap = false,
   }) async {
+    // Check subscription / free tier limit before hitting the API.
+    final isSubscribed = await ref.read(isSubscribedProvider.future);
+    if (!mounted) return;
+    if (!isSubscribed) {
+      final count = await LookupCounter.getCount();
+      if (count >= LookupCounter.freeLimit) {
+        if (mounted) showPaywallSheet(context);
+        return;
+      }
+    }
+
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     setState(() => _searching = true);
     try {
       final result = await queryFn();
       if (!mounted) return;
+
+      if (!isSubscribed) await LookupCounter.increment();
+      if (!mounted) return;
+
       if (result.hasError) {
         ScaffoldMessenger.of(
           context,
