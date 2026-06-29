@@ -16,6 +16,52 @@ class ChangeApplication {
   bool get isPending => status.toLowerCase() == 'unapproved';
 }
 
+class WaterHubListing {
+  final String id;
+  final String title;
+  final String url;
+  final int? policyArea;
+  final String? county;
+  final String? quantity;
+  final String? price;
+  final bool isWaterRight;
+
+  const WaterHubListing({
+    required this.id,
+    required this.title,
+    required this.url,
+    this.policyArea,
+    this.county,
+    this.quantity,
+    this.price,
+    required this.isWaterRight,
+  });
+
+  String get hubUrl => 'https://utahwaterhub.com$url';
+
+  factory WaterHubListing.fromJson(Map<String, dynamic> j) => WaterHubListing(
+    id: j['id'] as String,
+    title: j['title'] as String,
+    url: j['url'] as String,
+    policyArea: j['policyArea'] as int?,
+    county: j['county'] as String?,
+    quantity: j['quantity'] as String?,
+    price: j['price'] as String?,
+    isWaterRight: j['isWaterRight'] as bool? ?? false,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'url': url,
+    if (policyArea != null) 'policyArea': policyArea,
+    if (county != null) 'county': county,
+    if (quantity != null) 'quantity': quantity,
+    if (price != null) 'price': price,
+    'isWaterRight': isWaterRight,
+  };
+}
+
 // Field reference for Utah_Points_of_Diversion (services.arcgis.com/ZzrwjTRez6FJiOq4):
 // WRNUM, OWNER, SOURCE, TYPE (Surface/Underground), PRIORITY (YYYYMMDD int),
 // STATUS (Approved/Perfected/Unapproved/Lapsed/Expired/etc),

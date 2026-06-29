@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:prior/core/water_hub_client.dart';
 import 'package:prior/core/water_rights_client.dart';
 import 'package:prior/data/water_right.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -41,14 +42,23 @@ class WaterRightCard extends StatefulWidget {
 
 class _WaterRightCardState extends State<WaterRightCard> {
   late final Future<List<ChangeApplication>>? _changeAppsFuture;
+  late final Future<List<WaterHubListing>>? _hubListingsFuture;
 
   @override
   void initState() {
     super.initState();
     final rn = widget.right.rightNumber;
-    _changeAppsFuture = _utahWrPattern.hasMatch(rn)
+    final isUtah = _utahWrPattern.hasMatch(rn);
+    _changeAppsFuture = isUtah
         ? WaterRightsClient.instance.fetchChangeApps(rn)
         : null;
+    if (isUtah) {
+      final area = int.tryParse(rn.split('-').first);
+      _hubListingsFuture =
+          area != null ? WaterHubClient.instance.listingsForArea(area) : null;
+    } else {
+      _hubListingsFuture = null;
+    }
   }
 
   @override
@@ -141,6 +151,93 @@ class _WaterRightCardState extends State<WaterRightCard> {
                                 color: Colors.grey,
                               ),
                             ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+
+            // Utah Water Hub listings (lazy-loaded, fails silently)
+            if (_hubListingsFuture != null)
+              FutureBuilder<List<WaterHubListing>>(
+                future: _hubListingsFuture,
+                builder: (context, snap) {
+                  if (!snap.hasData || snap.data!.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  final listings = snap.data!;
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Divider(),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.sell_outlined,
+                              size: 15,
+                              color: Colors.green[700],
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${listings.length} listing${listings.length > 1 ? 's' : ''} for sale (Area ${listings.first.policyArea})',
+                              style: TextStyle(
+                                color: Colors.green[700],
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        ...listings.map(
+                          (l) => Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: InkWell(
+                              onTap: () {
+                                final url = Uri.tryParse(l.hubUrl);
+                                if (url != null) {
+                                  launchUrl(
+                                    url,
+                                    mode: LaunchMode.externalApplication,
+                                  );
+                                }
+                              },
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      l.title,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ),
+                                  if (l.quantity != null)
+                                    Text(
+                                      '  ${l.quantity}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'via Utah Water Hub',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey[400],
                           ),
                         ),
                       ],
