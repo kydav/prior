@@ -40,25 +40,22 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         final coord = ctx.point.coordinates;
         final lat = coord.lat.toDouble();
         final lng = coord.lng.toDouble();
-        await _runQuery(
-          () async {
-            // For Colorado, read parcel attributes from the rendered vector tile
-            // (instant, local) rather than hitting the slow ArcGIS endpoint.
-            Map<String, dynamic>? tileParcel;
-            if (ParcelLayer.isColorado(lat, lng) && _map != null) {
-              tileParcel = await ParcelLayer.queryProperties(
-                _map!,
-                ctx.touchPosition,
-              );
-            }
-            return WaterRightsClient.instance.lookupByCoords(
-              lat,
-              lng,
-              tileParcel: tileParcel,
+        await _runQuery(() async {
+          // For Colorado, read parcel attributes from the rendered vector tile
+          // (instant, local) rather than hitting the slow ArcGIS endpoint.
+          Map<String, dynamic>? tileParcel;
+          if (ParcelLayer.isColorado(lat, lng) && _map != null) {
+            tileParcel = await ParcelLayer.queryProperties(
+              _map!,
+              ctx.touchPosition,
             );
-          },
-          isTap: true,
-        );
+          }
+          return WaterRightsClient.instance.lookupByCoords(
+            lat,
+            lng,
+            tileParcel: tileParcel,
+          );
+        }, isTap: true);
       }),
     );
   }
@@ -242,7 +239,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     child: TextField(
                       controller: _searchCtrl,
                       decoration: InputDecoration(
-                        hintText: 'Address, parcel, or water right # (55-8234)...',
+                        hintText:
+                            'Address, parcel, or water right # (55-8234)...',
                         prefixIcon: const Icon(Icons.search),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),

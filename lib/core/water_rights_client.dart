@@ -70,13 +70,14 @@ class WaterRightsClient {
       }
     }
 
+    // Check WR number before geocoding — Mapbox can misinterpret "55-8234" as an address.
+    if (_wrNumPattern.hasMatch(input)) {
+      return _lookupByWaterRightNumber(input);
+    }
+
     final coords = await _geocodeAddress(input);
     if (coords != null) {
       return lookupByCoords(coords.$1, coords.$2, address: input);
-    }
-
-    if (_wrNumPattern.hasMatch(input)) {
-      return _lookupByWaterRightNumber(input);
     }
 
     final parcelCenter = await _parcelCenterByNumber(input);
