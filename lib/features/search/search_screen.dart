@@ -34,6 +34,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   Future<void> _onMapCreated(MapboxMap map) async {
     _map = map;
+    map.location.updateSettings(
+      LocationComponentSettings(
+        enabled: true,
+        puckBearingEnabled: true,
+        puckBearing: PuckBearing.HEADING,
+      ),
+    );
     map.addInteraction(
       TapInteraction.onMap((ctx) async {
         if (_searching || !_showingLines) return;
@@ -63,6 +70,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Future<void> _onStyleLoaded(StyleLoadedEventData _) async {
     if (_map == null) return;
     await ParcelLayer.setup(_map!);
+    _map!.location.updateSettings(
+      LocationComponentSettings(
+        enabled: true,
+        puckBearingEnabled: true,
+        puckBearing: PuckBearing.HEADING,
+      ),
+    );
   }
 
   Future<void> _onMapIdle(MapIdleEventData _) async {
