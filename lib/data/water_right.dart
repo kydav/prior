@@ -2,6 +2,20 @@ extension on String {
   String? get nullIfEmpty => isEmpty ? null : this;
 }
 
+class ChangeApplication {
+  final String appNumber;
+  final String filedDate;
+  final String status;
+
+  const ChangeApplication({
+    required this.appNumber,
+    required this.filedDate,
+    required this.status,
+  });
+
+  bool get isPending => status.toLowerCase() == 'unapproved';
+}
+
 // Field reference for Utah_Points_of_Diversion (services.arcgis.com/ZzrwjTRez6FJiOq4):
 // WRNUM, OWNER, SOURCE, TYPE (Surface/Underground), PRIORITY (YYYYMMDD int),
 // STATUS (Approved/Perfected/Unapproved/Lapsed/Expired/etc),

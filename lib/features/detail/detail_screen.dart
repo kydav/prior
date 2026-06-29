@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:prior/core/water_rights_client.dart';
 import 'package:prior/data/water_right.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -27,12 +28,32 @@ class DetailScreen extends StatelessWidget {
   }
 }
 
-class WaterRightCard extends StatelessWidget {
+// Only Utah rights (pattern: digits-digits) support change app lookup.
+final _utahWrPattern = RegExp(r'^\d{1,3}-\d{1,7}$');
+
+class WaterRightCard extends StatefulWidget {
   final WaterRight right;
   const WaterRightCard({super.key, required this.right});
 
   @override
+  State<WaterRightCard> createState() => _WaterRightCardState();
+}
+
+class _WaterRightCardState extends State<WaterRightCard> {
+  late final Future<List<ChangeApplication>>? _changeAppsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    final rn = widget.right.rightNumber;
+    _changeAppsFuture = _utahWrPattern.hasMatch(rn)
+        ? WaterRightsClient.instance.fetchChangeApps(rn)
+        : null;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final right = widget.right;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -75,6 +96,59 @@ class WaterRightCard extends StatelessWidget {
             if (right.ownerName != null) _Row('Owner', right.ownerName!),
             if (right.plssLocation != null)
               _Row('Location', right.plssLocation!),
+
+            // Pending change application badge (Utah only, lazy-loaded)
+            if (_changeAppsFuture != null)
+              FutureBuilder<List<ChangeApplication>>(
+                future: _changeAppsFuture,
+                builder: (context, snap) {
+                  if (!snap.hasData) return const SizedBox.shrink();
+                  final pending = snap.data!.where((a) => a.isPending).toList();
+                  if (pending.isEmpty) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Divider(),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.pending_actions,
+                              size: 15,
+                              color: Colors.orange[700],
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Pending change application${pending.length > 1 ? 's' : ''}',
+                              style: TextStyle(
+                                color: Colors.orange[700],
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        ...pending.map(
+                          (a) => Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              '${a.appNumber}  ·  Filed ${a.filedDate}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+
             if (right.divisionOfWaterRightsUrl != null) ...[
               const SizedBox(height: 12),
               OutlinedButton.icon(

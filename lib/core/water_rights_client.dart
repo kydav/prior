@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:prior/data/water_right.dart';
+export 'package:prior/data/water_right.dart' show ChangeApplication;
 
 // Mapbox public token — restrict to bundle ID in Mapbox dashboard to prevent abuse
 const _mapboxToken =
@@ -29,6 +30,8 @@ const _blmPlssUrl =
     'https://gis.blm.gov/arcgis/rest/services/Cadastral/BLM_Natl_PLSS_CadNSDI/MapServer/2';
 
 final _coordPattern = RegExp(r'^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$');
+// Utah water right numbers: area-serial, e.g. "55-8234" or "35-14751"
+final _wrNumPattern = RegExp(r'^\d{1,3}-\d{1,7}$');
 
 enum _State { utah, colorado, unknown }
 
@@ -72,14 +75,18 @@ class WaterRightsClient {
       return lookupByCoords(coords.$1, coords.$2, address: input);
     }
 
+    if (_wrNumPattern.hasMatch(input)) {
+      return _lookupByWaterRightNumber(input);
+    }
+
     final parcelCenter = await _parcelCenterByNumber(input);
     if (parcelCenter != null) {
       return lookupByCoords(parcelCenter.$1, parcelCenter.$2, address: input);
     }
 
     return LookupResult.error(
-      'Could not find that address, coordinates, or parcel number. '
-      'Try "1234 Main St, Denver CO" or "39.73, -104.99".',
+      'Could not find that address, coordinates, parcel, or water right number. '
+      'Try "1234 Main St, Salt Lake City UT", "39.73, -104.99", or "55-8234".',
     );
   }
 
@@ -565,6 +572,108 @@ class WaterRightsClient {
       debugPrint('Utah parcel number lookup error: $e');
       return null;
     }
+  }
+
+  // ── Water right number search (Utah only) ─────────────────────────────────
+
+  Future<LookupResult> _lookupByWaterRightNumber(String wrNum) async {
+    final uri = Uri.parse('$_utahPodUrl/query').replace(
+      queryParameters: {
+        'where': "WRNUM='${wrNum.replaceAll("'", "''")}'",
+        'outFields': '*',
+        'returnGeometry': 'true',
+        'outSR': '4326',
+        'f': 'json',
+      },
+    );
+    try {
+      final res = await http.get(uri).timeout(const Duration(seconds: 15));
+      if (res.statusCode != 200) {
+        return LookupResult.error('Could not look up water right $wrNum.');
+      }
+      final json = jsonDecode(res.body) as Map<String, dynamic>;
+      final features = json['features'] as List? ?? [];
+      if (features.isEmpty) {
+        return LookupResult.error('No Utah water right found for $wrNum.');
+      }
+      final rights = features.map((f) {
+        final attrs =
+            (f as Map<String, dynamic>)['attributes']
+                as Map<String, dynamic>? ??
+            {};
+        final geom = f['geometry'] as Map<String, dynamic>?;
+        if (geom != null) {
+          attrs['LAT'] = geom['y'];
+          attrs['LNG'] = geom['x'];
+        }
+        return WaterRight.fromArcGis(attrs);
+      }).toList();
+      final seen = <String>{};
+      final deduped =
+          rights.where((r) => r.rightNumber.isEmpty || seen.add(r.rightNumber)).toList();
+      final first = deduped.first;
+      return LookupResult(
+        lat: first.podLat,
+        lng: first.podLng,
+        address: 'Water Right $wrNum',
+        rights: deduped,
+      );
+    } catch (e) {
+      debugPrint('Water right number lookup error: $e');
+      return LookupResult.error('Could not look up water right $wrNum.');
+    }
+  }
+
+  // ── DWRi change application scrape ────────────────────────────────────────
+
+  Future<List<ChangeApplication>> fetchChangeApps(String wrNum) async {
+    final uri = Uri.parse(
+      'https://waterrights.utah.gov/asp_apps/wrprint/wrPrintAction.asp',
+    ).replace(
+      queryParameters: {
+        'action': 'tab_home',
+        'wrnum': wrNum,
+        'tab': 'home',
+        'companyid': '0',
+        'forPublicView': '0',
+      },
+    );
+    try {
+      final res = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (res.statusCode != 200) return [];
+      return _parseChangeApps(res.body);
+    } catch (e) {
+      debugPrint('Change app fetch error for $wrNum: $e');
+      return [];
+    }
+  }
+
+  List<ChangeApplication> _parseChangeApps(String html) {
+    final sectionMatch = RegExp(
+      r'<!-- changes -->(.*?)<!-- end of changes -->',
+      dotAll: true,
+    ).firstMatch(html);
+    if (sectionMatch == null) return [];
+    final raw = sectionMatch
+        .group(1)!
+        .replaceAll(RegExp(r'<[^>]+>'), ' ')
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    final pattern = RegExp(
+      r'([a-z]\d+[a-z]?)\s+\(Filed:\s+(\d{2}/\d{2}/\d{4})\)\s+(Approved|Unapproved|Rejected|Withdrawn)',
+      caseSensitive: false,
+    );
+    return pattern
+        .allMatches(raw)
+        .map(
+          (m) => ChangeApplication(
+            appNumber: m.group(1)!,
+            filedDate: m.group(2)!,
+            status: m.group(3)!,
+          ),
+        )
+        .toList();
   }
 
   Future<(double, double)?> _parcelCenterColorado(String parcelId) async {
