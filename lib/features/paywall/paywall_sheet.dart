@@ -127,7 +127,7 @@ class _PaywallSheetState extends ConsumerState<_PaywallSheet> {
           const SizedBox(height: 16),
 
           Text(
-            'Go Unlimited',
+            'Unlock Prior Pro',
             style: Theme.of(
               context,
             ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
@@ -173,6 +173,15 @@ class _PaywallSheetState extends ConsumerState<_PaywallSheet> {
               ),
             ),
           ),
+          const SizedBox(height: 10),
+          Text(
+            'Subscription renews automatically monthly. Cancel anytime.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+            textAlign: TextAlign.center,
+          ),
+
           const SizedBox(height: 20),
 
           SizedBox(
