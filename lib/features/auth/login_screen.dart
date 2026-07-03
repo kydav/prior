@@ -68,7 +68,9 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           Positioned.fill(
             child: Image.asset(
-              'assets/images/background.png',
+              Theme.of(context).brightness == Brightness.light
+                  ? 'assets/images/background.png'
+                  : 'assets/images/background_dark.png',
               fit: BoxFit.cover,
               alignment: Alignment.bottomCenter,
             ),
@@ -97,19 +99,23 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: Theme.of(context).textTheme.displayLarge
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.primary,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                 ),
                           ),
                           Text(
                             'Water rights. Mapped.',
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
-                                  color: Theme.of(context).colorScheme.primary,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                 ),
                           ),
                           const SizedBox(height: 48),
                           Card(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 20,
@@ -122,50 +128,37 @@ class _LoginScreenState extends State<LoginScreen> {
                                   Text(
                                     'Welcome Back',
                                     style: Theme.of(context).textTheme.bodyLarge
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                        ),
+                                        ?.copyWith(fontWeight: FontWeight.bold),
                                     textAlign: TextAlign.center,
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
                                     'Sign in to your account',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                        ),
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium,
                                     textAlign: TextAlign.center,
                                   ),
                                   const SizedBox(height: 16),
                                   TextField(
                                     controller: _emailCtrl,
-                                    style: const TextStyle(color: Colors.black),
                                     decoration: const InputDecoration(
                                       labelText: 'Email',
-                                      fillColor: Colors.white,
                                       prefixIcon: Icon(Icons.email_outlined),
                                     ),
+                                    textInputAction: TextInputAction.next,
                                     keyboardType: TextInputType.emailAddress,
-
                                     autocorrect: false,
                                   ),
                                   const SizedBox(height: 16),
                                   TextField(
                                     controller: _passCtrl,
-                                    style: const TextStyle(color: Colors.black),
+                                    textInputAction: TextInputAction.done,
                                     decoration: InputDecoration(
                                       prefixIcon: const Icon(
                                         Icons.lock_outline,
                                       ),
                                       labelText: 'Password',
-                                      fillColor: Colors.white,
                                       suffixIcon: IconButton(
                                         icon: isMasked
                                             ? const Icon(
@@ -181,11 +174,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                         },
                                       ),
                                     ),
-                                    obscureText: isMasked,
 
-                                    onSubmitted: _isSignUp
-                                        ? null
-                                        : (_) => _submit(),
+                                    obscureText: isMasked,
+                                    onSubmitted: (_) => _submit(),
                                   ),
 
                                   if (_error != null) ...[
@@ -253,7 +244,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                                 : 'Sign in',
                                             style: const TextStyle(
                                               fontWeight: FontWeight.bold,
-                                              color: Colors.white,
+
+                                              ///color: Colors.white,
                                             ),
                                           ),
                                   ),
@@ -276,6 +268,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                         }),
                                         child: Text(
                                           _isSignUp ? 'Sign in' : 'Sign up',
+                                          style: TextStyle(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.inversePrimary,
+                                          ),
                                         ),
                                       ),
                                     ],

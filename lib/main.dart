@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:prior/core/purchases_service.dart';
 import 'package:prior/core/router.dart';
-import 'package:prior/core/theme.dart';
 import 'package:prior/firebase_options.dart';
 
 void main() async {
@@ -25,7 +24,27 @@ class PriorApp extends StatelessWidget {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'Prior',
-      theme: priorTheme,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1A5276)),
+        brightness: Brightness.light,
+        inputDecorationTheme: const InputDecorationTheme(
+          border: OutlineInputBorder(),
+          filled: true,
+        ),
+      ),
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF0D3B66),
+          brightness: Brightness.dark,
+        ),
+        brightness: Brightness.dark,
+        inputDecorationTheme: const InputDecorationTheme(
+          border: OutlineInputBorder(),
+          filled: true,
+        ),
+      ),
       routerConfig: router,
     );
   }
