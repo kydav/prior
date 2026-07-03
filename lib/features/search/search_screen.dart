@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:go_router/go_router.dart';
@@ -229,146 +230,159 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          MapWidget(
-            onMapCreated: _onMapCreated,
-            onStyleLoadedListener: _onStyleLoaded,
-            onMapIdleListener: _onMapIdle,
-            viewport: _initialViewport,
-          ),
-          // Search bar
-          Positioned(
-            bottom: 80,
-            left: 16,
-            right: 16,
-            child: Material(
-              elevation: 4,
-              borderRadius: BorderRadius.circular(12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _searchCtrl,
-                      decoration: InputDecoration(
-                        hintText:
-                            'Address, parcel, or water right # (55-8234)...',
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
+    return AnnotatedRegion(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+      ),
+      child: Scaffold(
+        body: Stack(
+          children: [
+            MapWidget(
+              onMapCreated: _onMapCreated,
+              onStyleLoadedListener: _onStyleLoaded,
+              onMapIdleListener: _onMapIdle,
+              viewport: _initialViewport,
+            ),
+            // Search bar
+            Positioned(
+              bottom: 80,
+              left: 16,
+              right: 16,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchCtrl,
+                        decoration: InputDecoration(
+                          hintText:
+                              'Address, parcel, or water right # (55-8234)...',
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
                         ),
-                        filled: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
+                        textInputAction: TextInputAction.search,
+                        onSubmitted: (_) => _searchAddress(),
                       ),
-                      textInputAction: TextInputAction.search,
-                      onSubmitted: (_) => _searchAddress(),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.person),
-                    onPressed: () => context.push('/profile'),
-                  ),
-                ],
+                    IconButton(
+                      icon: const Icon(Icons.person),
+                      onPressed: () => context.push('/profile'),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          // Parcel fetch indicator
-          Positioned(
-            right: 20,
-            bottom: 225,
-            child: ValueListenableBuilder<bool>(
-              valueListenable: ParcelLayer.isFetching,
-              builder: (context, fetching, _) {
-                if (!fetching || !_showingLines) return const SizedBox.shrink();
-                return GestureDetector(
-                  onTap: () {
-                    showDialog<void>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text('Loading parcel boundaries'),
-                        content: const Text(
-                          'Parcel boundaries are being fetched from the state GIS service. '
-                          'The map will update automatically when the data arrives.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () {
-                              ParcelLayer.cancelFetch();
-                              WaterRightsClient.instance.cancelColoradoLookup();
-                              Navigator.pop(ctx);
-                            },
-                            child: const Text('Cancel'),
+            // Parcel fetch indicator
+            Positioned(
+              right: 20,
+              bottom: 225,
+              child: ValueListenableBuilder<bool>(
+                valueListenable: ParcelLayer.isFetching,
+                builder: (context, fetching, _) {
+                  if (!fetching || !_showingLines) {
+                    return const SizedBox.shrink();
+                  }
+                  return GestureDetector(
+                    onTap: () {
+                      showDialog<void>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Loading parcel boundaries'),
+                          content: const Text(
+                            'Parcel boundaries are being fetched from the state GIS service. '
+                            'The map will update automatically when the data arrives.',
                           ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            child: const Text('OK'),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                ParcelLayer.cancelFetch();
+                                WaterRightsClient.instance
+                                    .cancelColoradoLookup();
+                                Navigator.pop(ctx);
+                              },
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    child: const SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          SizedBox(
+                            width: 36,
+                            height: 36,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.blue,
+                            ),
+                          ),
+                          Icon(
+                            Icons.info_outline,
+                            color: Colors.blue,
+                            size: 20,
                           ),
                         ],
                       ),
-                    );
-                  },
-                  child: const SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        SizedBox(
-                          width: 36,
-                          height: 36,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.blue,
-                          ),
-                        ),
-                        Icon(Icons.info_outline, color: Colors.blue, size: 20),
-                      ],
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
-          // Map type button
-          Positioned(
-            right: 16,
-            bottom: 180,
-            child: FloatingActionButton.small(
-              heroTag: 'maptype',
-              onPressed: _showStyleSheet,
-              tooltip: 'Map type',
-              child: const Icon(Icons.layers_outlined),
+            // Map type button
+            Positioned(
+              right: 16,
+              bottom: 180,
+              child: FloatingActionButton.small(
+                heroTag: 'maptype',
+                onPressed: _showStyleSheet,
+                tooltip: 'Map type',
+                child: const Icon(Icons.layers_outlined),
+              ),
             ),
-          ),
-          // Current location button
-          Positioned(
-            right: 16,
-            bottom: 135,
-            child: FloatingActionButton.small(
-              heroTag: 'location',
-              onPressed: _locating ? null : _goToCurrentLocation,
-              tooltip: 'My location',
-              child: _locating
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.my_location),
+            // Current location button
+            Positioned(
+              right: 16,
+              bottom: 135,
+              child: FloatingActionButton.small(
+                heroTag: 'location',
+                onPressed: _locating ? null : _goToCurrentLocation,
+                tooltip: 'My location',
+                child: _locating
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.my_location),
+              ),
             ),
-          ),
-          // Full-screen loading overlay
-          if (_searching)
-            Container(
-              color: Colors.black45,
-              child: const Center(child: SearchLoaderCard()),
-            ),
-        ],
+            // Full-screen loading overlay
+            if (_searching)
+              Container(
+                color: Colors.black45,
+                child: const Center(child: SearchLoaderCard()),
+              ),
+          ],
+        ),
       ),
     );
   }
