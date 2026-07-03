@@ -168,7 +168,7 @@ class _PaywallSheetState extends ConsumerState<_PaywallSheet> {
             child: Text(
               '$price / month',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: cs.primary,
+                color: cs.onSurface,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -195,7 +195,10 @@ class _PaywallSheetState extends ConsumerState<_PaywallSheet> {
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Unlock unlimited lookups'),
+                  : const Text(
+                      'Unlock unlimited lookups',
+                      style: TextStyle(color: Colors.white),
+                    ),
             ),
           ),
           const SizedBox(height: 12),
@@ -207,7 +210,10 @@ class _PaywallSheetState extends ConsumerState<_PaywallSheet> {
                     width: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Restore purchases'),
+                : const Text(
+                    'Restore purchases',
+                    style: TextStyle(color: Colors.white),
+                  ),
           ),
 
           Row(
