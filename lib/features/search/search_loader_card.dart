@@ -36,23 +36,23 @@ class _SearchLoaderCardState extends State<SearchLoaderCard> {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Looking up water rights…'),
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            const Text('Looking up water rights…'),
             if (showingMessage) ...[
-              SizedBox(height: 16),
-              Text(
+              const SizedBox(height: 16),
+              const Text(
                 'This is taking longer than expected ',
                 textAlign: TextAlign.center,
               ),
-              Text('We are still searching...'),
-              SizedBox(height: 8),
-              Text('Please be patient,'),
-              Text('as we are limited by the state database.'),
+              const Text('We are still searching...'),
+              const SizedBox(height: 8),
+              const Text('Please be patient,'),
+              const Text('as we are limited by the state database.'),
               TextButton(
                 onPressed: () {
                   ParcelLayer.cancelFetch();

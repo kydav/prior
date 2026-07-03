@@ -134,7 +134,7 @@ class _PaywallSheetState extends ConsumerState<_PaywallSheet> {
           ),
           const SizedBox(height: 8),
           Text(
-            'You\'ve used your ${LookupCounter.freeLimit} free lookups this month.',
+            "You've used your ${LookupCounter.freeLimit} free lookups this month.",
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),

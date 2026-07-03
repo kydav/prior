@@ -12,19 +12,15 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
-  final _confirmPassCtrl = TextEditingController();
   bool _isSignUp = false;
   bool _loading = false;
   String? _error;
+  bool isMasked = true;
 
   Future<void> _submit() async {
     final email = _emailCtrl.text.trim();
     final password = _passCtrl.text;
 
-    if (_isSignUp && password != _confirmPassCtrl.text) {
-      setState(() => _error = 'Passwords do not match.');
-      return;
-    }
     if (password.length < 6) {
       setState(() => _error = 'Password must be at least 6 characters.');
       return;
@@ -67,91 +63,237 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 60),
-              Text(
-                'Prior',
-                style: Theme.of(
-                  context,
-                ).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Water rights lookup',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
-              ),
-              const SizedBox(height: 48),
-              TextField(
-                controller: _emailCtrl,
-                decoration: const InputDecoration(labelText: 'Email'),
-                keyboardType: TextInputType.emailAddress,
-                autocorrect: false,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passCtrl,
-                decoration: const InputDecoration(labelText: 'Password'),
-                obscureText: true,
-                onSubmitted: _isSignUp ? null : (_) => _submit(),
-              ),
-              if (_isSignUp) ...[
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _confirmPassCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Confirm password',
-                  ),
-                  obscureText: true,
-                  onSubmitted: (_) => _submit(),
-                ),
-              ],
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  _error!,
-                  style: const TextStyle(color: Colors.red, fontSize: 13),
-                ),
-              ],
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _loading ? null : _submit,
-                child: _loading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(_isSignUp ? 'Create account' : 'Sign in'),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _isSignUp
-                        ? 'Already have an account?'
-                        : "Don't have an account?",
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                  TextButton(
-                    onPressed: () => setState(() {
-                      _isSignUp = !_isSignUp;
-                      _error = null;
-                    }),
-                    child: Text(_isSignUp ? 'Sign in' : 'Sign up'),
-                  ),
-                ],
-              ),
-            ],
+      resizeToAvoidBottomInset: false,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/background.png',
+              fit: BoxFit.cover,
+              alignment: Alignment.bottomCenter,
+            ),
           ),
-        ),
+          SafeArea(
+            child: AnimatedPadding(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(10),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset('assets/images/droplet.png', height: 120),
+                          Text(
+                            'Prior',
+                            style: Theme.of(context).textTheme.displayLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                          ),
+                          Text(
+                            'Water rights. Mapped.',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                          ),
+                          const SizedBox(height: 48),
+                          Card(
+                            color: Colors.white,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 8,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Welcome Back',
+                                    style: Theme.of(context).textTheme.bodyLarge
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                        ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Sign in to your account',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                        ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  TextField(
+                                    controller: _emailCtrl,
+                                    style: const TextStyle(color: Colors.black),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Email',
+                                      fillColor: Colors.white,
+                                      prefixIcon: Icon(Icons.email_outlined),
+                                    ),
+                                    keyboardType: TextInputType.emailAddress,
+
+                                    autocorrect: false,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  TextField(
+                                    controller: _passCtrl,
+                                    style: const TextStyle(color: Colors.black),
+                                    decoration: InputDecoration(
+                                      prefixIcon: const Icon(
+                                        Icons.lock_outline,
+                                      ),
+                                      labelText: 'Password',
+                                      fillColor: Colors.white,
+                                      suffixIcon: IconButton(
+                                        icon: isMasked
+                                            ? const Icon(
+                                                Icons.visibility_outlined,
+                                              )
+                                            : const Icon(
+                                                Icons.visibility_off_outlined,
+                                              ),
+                                        onPressed: () {
+                                          setState(() {
+                                            isMasked = !isMasked;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                    obscureText: isMasked,
+
+                                    onSubmitted: _isSignUp
+                                        ? null
+                                        : (_) => _submit(),
+                                  ),
+
+                                  if (_error != null) ...[
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _error!,
+                                      style: const TextStyle(
+                                        color: Colors.red,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 8),
+                                  TextButton(
+                                    onPressed: () async {
+                                      if (_emailCtrl.text.isEmpty) {
+                                        setState(() {
+                                          _error = 'Please enter your email.';
+                                        });
+                                        return;
+                                      }
+                                      try {
+                                        await FirebaseAuth.instance
+                                            .sendPasswordResetEmail(
+                                              email: _emailCtrl.text.trim(),
+                                            );
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Password reset email sent.',
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      } on FirebaseAuthException catch (e) {
+                                        setState(() {
+                                          _error = _friendlyError(e.code);
+                                        });
+                                      }
+                                    },
+                                    child: const Text('Forgot password?'),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  FilledButton(
+                                    onPressed: _loading ? null : _submit,
+                                    style: FilledButton.styleFrom(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: _loading
+                                        ? const SizedBox(
+                                            height: 20,
+                                            width: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : Text(
+                                            _isSignUp
+                                                ? 'Create account'
+                                                : 'Sign in',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        _isSignUp
+                                            ? 'Already have an account?'
+                                            : "Don't have an account?",
+                                        style: const TextStyle(
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => setState(() {
+                                          _isSignUp = !_isSignUp;
+                                          _error = null;
+                                        }),
+                                        child: Text(
+                                          _isSignUp ? 'Sign in' : 'Sign up',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 100),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -160,7 +302,6 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _emailCtrl.dispose();
     _passCtrl.dispose();
-    _confirmPassCtrl.dispose();
     super.dispose();
   }
 }

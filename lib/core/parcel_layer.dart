@@ -25,7 +25,10 @@ class ParcelLayer {
   static bool _layerAdded = false;
   static final isFetching = ValueNotifier<bool>(false);
   static http.Client? _client;
-  static double? _lastMinLng, _lastMinLat, _lastMaxLng, _lastMaxLat;
+  static double? _lastMinLng;
+  static double? _lastMinLat;
+  static double? _lastMaxLng;
+  static double? _lastMaxLat;
 
   static Future<void> setup(MapboxMap map) async {
     _layerAdded = false;
@@ -218,7 +221,7 @@ class ParcelLayer {
     try {
       final result = await map.queryRenderedFeatures(
         RenderedQueryGeometry.fromScreenCoordinate(screenCoord),
-        RenderedQueryOptions(layerIds: [_coLayerId], filter: null),
+        RenderedQueryOptions(layerIds: [_coLayerId]),
       );
       if (result.isEmpty) return null;
       final props = result.first?.queriedFeature.feature['properties'];
@@ -232,8 +235,7 @@ class ParcelLayer {
     }
   }
 
-  static bool isColorado(double lat, double lng) =>
-      _isColoradoCenter(lat, lng);
+  static bool isColorado(double lat, double lng) => _isColoradoCenter(lat, lng);
 
   static void cancelFetch() {
     _client?.close();

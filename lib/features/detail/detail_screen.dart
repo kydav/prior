@@ -7,7 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 class DetailScreen extends StatelessWidget {
   final List<WaterRight> rights;
 
-  const DetailScreen({super.key, required this.rights});
+  const DetailScreen({required this.rights, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +34,7 @@ final _utahWrPattern = RegExp(r'^\d{1,3}-\d{1,7}$');
 
 class WaterRightCard extends StatefulWidget {
   final WaterRight right;
-  const WaterRightCard({super.key, required this.right});
+  const WaterRightCard({required this.right, super.key});
 
   @override
   State<WaterRightCard> createState() => _WaterRightCardState();
@@ -54,8 +54,9 @@ class _WaterRightCardState extends State<WaterRightCard> {
         : null;
     if (isUtah) {
       final area = int.tryParse(rn.split('-').first);
-      _hubListingsFuture =
-          area != null ? WaterHubClient.instance.listingsForArea(area) : null;
+      _hubListingsFuture = area != null
+          ? WaterHubClient.instance.listingsForArea(area)
+          : null;
     } else {
       _hubListingsFuture = null;
     }
@@ -84,9 +85,9 @@ class _WaterRightCardState extends State<WaterRightCard> {
                     ),
                   ),
                 ),
-                if (right.isSenior) _Badge('Senior', Colors.amber),
+                if (right.isSenior) const _Badge('Senior', Colors.amber),
                 if (!right.isActive && right.status != null)
-                  _Badge('Inactive', Colors.grey),
+                  const _Badge('Inactive', Colors.grey),
               ],
             ),
             const SizedBox(height: 10),

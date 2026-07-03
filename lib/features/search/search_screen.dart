@@ -34,7 +34,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   Future<void> _onMapCreated(MapboxMap map) async {
     _map = map;
-    map.location.updateSettings(
+    await map.location.updateSettings(
       LocationComponentSettings(
         enabled: true,
         puckBearingEnabled: true,
@@ -70,7 +70,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Future<void> _onStyleLoaded(StyleLoadedEventData _) async {
     if (_map == null) return;
     await ParcelLayer.setup(_map!);
-    _map!.location.updateSettings(
+    await _map!.location.updateSettings(
       LocationComponentSettings(
         enabled: true,
         puckBearingEnabled: true,
@@ -147,7 +147,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (!isSubscribed) {
       final count = await LookupCounter.getCount();
       if (count >= LookupCounter.freeLimit) {
-        if (mounted) showPaywallSheet(context);
+        if (mounted) await showPaywallSheet(context);
         return;
       }
     }
@@ -212,7 +212,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => DraggableScrollableSheet(
         initialChildSize: 0.65,
-        minChildSize: 0.25,
         maxChildSize: 0.92,
         expand: false,
         builder: (_, controller) => ClipRRect(
@@ -313,13 +312,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       ),
                     );
                   },
-                  child: SizedBox(
+                  child: const SizedBox(
                     width: 40,
                     height: 40,
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        const SizedBox(
+                        SizedBox(
                           width: 36,
                           height: 36,
                           child: CircularProgressIndicator(
@@ -327,11 +326,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                             color: Colors.blue,
                           ),
                         ),
-                        const Icon(
-                          Icons.info_outline,
-                          color: Colors.blue,
-                          size: 20,
-                        ),
+                        Icon(Icons.info_outline, color: Colors.blue, size: 20),
                       ],
                     ),
                   ),
@@ -495,7 +490,7 @@ class _MapStyleSheet extends StatelessWidget {
 class _ParcelInfoSheet extends StatelessWidget {
   final LookupResult? result;
   final ScrollController scrollController;
-  const _ParcelInfoSheet({this.result, required this.scrollController});
+  const _ParcelInfoSheet({required this.scrollController, this.result});
 
   @override
   Widget build(BuildContext context) {

@@ -30,11 +30,11 @@ class WaterHubListing {
     required this.id,
     required this.title,
     required this.url,
+    required this.isWaterRight,
     this.policyArea,
     this.county,
     this.quantity,
     this.price,
-    required this.isWaterRight,
   });
 
   String get hubUrl => 'https://utahwaterhub.com$url';
@@ -86,6 +86,7 @@ class WaterRight {
 
   const WaterRight({
     required this.rightNumber,
+    required this.raw,
     this.source,
     this.sourceType,
     this.priorityDate,
@@ -98,7 +99,6 @@ class WaterRight {
     this.podLat,
     this.podLng,
     this.divisionOfWaterRightsUrl,
-    required this.raw,
   });
 
   // PRIORITY is stored as an int YYYYMMDD (e.g. 20170327)
@@ -122,7 +122,10 @@ class WaterRight {
     String? f(List<String> keys) {
       for (final k in keys) {
         final v = attrs[k];
-        if (v != null && v.toString().trim().isNotEmpty && v.toString() != 'null' && v.toString() != '0') {
+        if (v != null &&
+            v.toString().trim().isNotEmpty &&
+            v.toString() != 'null' &&
+            v.toString() != '0') {
           return v.toString().trim();
         }
       }
@@ -132,7 +135,8 @@ class WaterRight {
     final rightNum = f(['WRNUM', 'WR_SERIAL_NO', 'SERIAL_NO']) ?? '';
 
     // WebLink field comes directly from the service — use it, fall back to search URL
-    final webLink = f(['WebLink', 'WEBLINK', 'WEB_LINK']) ??
+    final webLink =
+        f(['WebLink', 'WEBLINK', 'WEB_LINK']) ??
         (rightNum.isNotEmpty
             ? 'https://www.waterrights.utah.gov/search/?q=${Uri.encodeComponent(rightNum)}'
             : null);
@@ -158,9 +162,13 @@ class WaterRight {
       source: f(['SOURCE', 'WATER_SOURCE', 'SOURCE_NAME']),
       sourceType: f(['TYPE', 'WR_TYPE', 'SOURCE_TYPE']),
       priorityDate: priorityDisplay,
-      volumeAcreFt: double.tryParse(f(['ACFT', 'ACRE_FEET', 'AF_ANNUAL', 'DIVERSION_VOLUME']) ?? ''),
+      volumeAcreFt: double.tryParse(
+        f(['ACFT', 'ACRE_FEET', 'AF_ANNUAL', 'DIVERSION_VOLUME']) ?? '',
+      ),
       cfs: double.tryParse(f(['CFS', 'FLOW_CFS']) ?? ''),
-      beneficialUse: uses.isNotEmpty ? uses : f(['BENEFICIAL_USE', 'USE_TYPE', 'BEN_USE']),
+      beneficialUse: uses.isNotEmpty
+          ? uses
+          : f(['BENEFICIAL_USE', 'USE_TYPE', 'BEN_USE']),
       status: f(['STATUS', 'SUMMARY_ST', 'WR_STATUS']),
       ownerName: f(['OWNER', 'OWNER_NAME', 'CLAIMANT']),
       plssLocation: f(['LOCATION']),
@@ -175,7 +183,9 @@ class WaterRight {
   factory WaterRight.fromCdss(Map<String, dynamic> attrs) {
     String? f(String key) {
       final v = attrs[key];
-      if (v == null || v.toString().trim().isEmpty || v.toString() == 'null') return null;
+      if (v == null || v.toString().trim().isEmpty || v.toString() == 'null') {
+        return null;
+      }
       return v.toString().trim();
     }
 
@@ -200,12 +210,7 @@ class WaterRight {
       rightNumber: wdid,
       source: f('waterSource'),
       sourceType: sourceType,
-      priorityDate: null, // requires separate waterrights/netamount call
-      volumeAcreFt: null,
-      cfs: null,
-      beneficialUse: null,
       status: status,
-      ownerName: null,
       plssLocation: [
         if (f('pm') != null) f('pm'),
         if (f('township') != null && f('range') != null)

@@ -1,8 +1,9 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:prior/data/water_right.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class WaterHubClient {
   WaterHubClient._();
@@ -61,10 +62,7 @@ class WaterHubClient {
   Future<List<WaterHubListing>> _fetchAndCache() async {
     try {
       final res = await http
-          .get(
-            Uri.parse(_listingsUrl),
-            headers: {'User-Agent': 'Mozilla/5.0'},
-          )
+          .get(Uri.parse(_listingsUrl), headers: {'User-Agent': 'Mozilla/5.0'})
           .timeout(const Duration(seconds: 12));
 
       if (res.statusCode != 200) return _memCache ?? [];
@@ -96,7 +94,7 @@ class WaterHubClient {
 
   List<WaterHubListing> _parseListings(String html) {
     // Strip React rendering comments before matching
-    final cleaned = html.replaceAll(RegExp(r'<!--.*?-->'), '');
+    final cleaned = html.replaceAll(RegExp('<!--.*?-->'), '');
     final results = <WaterHubListing>[];
 
     final cardPattern = RegExp(
@@ -109,8 +107,7 @@ class WaterHubClient {
         final url = m.group(1)!;
         final inner = m.group(2)!;
 
-        final titleMatch =
-            RegExp(r'<h2[^>]*>([^<]+)</h2>').firstMatch(inner);
+        final titleMatch = RegExp('<h2[^>]*>([^<]+)</h2>').firstMatch(inner);
         if (titleMatch == null) continue;
         final title = titleMatch.group(1)!.trim();
 
@@ -121,7 +118,9 @@ class WaterHubClient {
         final meta = metaMatch?.group(1)?.trim() ?? '';
 
         final areaMatch = RegExp(r'Policy area (\d+)').firstMatch(meta);
-        final area = areaMatch != null ? int.tryParse(areaMatch.group(1)!) : null;
+        final area = areaMatch != null
+            ? int.tryParse(areaMatch.group(1)!)
+            : null;
 
         String? county;
         if (meta.contains('·')) {
@@ -135,14 +134,14 @@ class WaterHubClient {
 
         // Quantity: font-mono text-sm text-ink (not text-ink-mute)
         final qtyMatch = RegExp(
-          r'font-mono text-sm text-ink[^-][^>]*>([^<]+)<',
+          'font-mono text-sm text-ink[^-][^>]*>([^<]+)<',
         ).firstMatch(inner);
         final qtyRaw = qtyMatch?.group(1)?.trim() ?? '';
         final quantity = qtyRaw.isEmpty ? null : qtyRaw;
 
         // Price: md:text-right div
         final priceMatch = RegExp(
-          r'md:text-right[^>]*>([^<]+)<',
+          'md:text-right[^>]*>([^<]+)<',
         ).firstMatch(inner);
         final priceRaw = priceMatch?.group(1)?.trim() ?? '';
         final price = priceRaw.isEmpty ? null : priceRaw;
@@ -151,16 +150,18 @@ class WaterHubClient {
         final slugParts = url.split('/').last.split('-');
         final id = slugParts.last;
 
-        results.add(WaterHubListing(
-          id: id,
-          title: title,
-          url: url,
-          policyArea: area,
-          county: county,
-          quantity: quantity,
-          price: price,
-          isWaterRight: isWaterRight,
-        ));
+        results.add(
+          WaterHubListing(
+            id: id,
+            title: title,
+            url: url,
+            policyArea: area,
+            county: county,
+            quantity: quantity,
+            price: price,
+            isWaterRight: isWaterRight,
+          ),
+        );
       } catch (e) {
         debugPrint('WaterHub card parse error: $e');
       }

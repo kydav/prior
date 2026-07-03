@@ -1,11 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
-import 'package:prior/features/auth/login_screen.dart';
-import 'package:prior/features/profile/profile_screen.dart';
-import 'package:prior/features/search/search_screen.dart';
-import 'package:prior/features/detail/detail_screen.dart';
-import 'package:prior/features/saved/saved_screen.dart';
 import 'package:prior/data/water_right.dart';
+import 'package:prior/features/auth/login_screen.dart';
+import 'package:prior/features/detail/detail_screen.dart';
+import 'package:prior/features/profile/profile_screen.dart';
+import 'package:prior/features/saved/saved_screen.dart';
+import 'package:prior/features/search/search_screen.dart';
 
 final router = GoRouter(
   redirect: (_, state) {
@@ -20,7 +20,7 @@ final router = GoRouter(
     GoRoute(
       path: '/detail',
       builder: (_, state) {
-        final rights = state.extra as List<WaterRight>;
+        final rights = state.extra! as List<WaterRight>;
         return DetailScreen(rights: rights);
       },
     ),

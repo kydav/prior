@@ -85,7 +85,7 @@ class WaterRightsClient {
       return lookupByCoords(parcelCenter.$1, parcelCenter.$2, address: input);
     }
 
-    return LookupResult.error(
+    return const LookupResult.error(
       'Could not find that address, coordinates, parcel, or water right number. '
       'Try "1234 Main St, Salt Lake City UT", "39.73, -104.99", or "55-8234".',
     );
@@ -103,7 +103,12 @@ class WaterRightsClient {
       case _State.utah:
         return _lookupUtah(lat, lng, address: address);
       case _State.colorado:
-        return _lookupColorado(lat, lng, address: address, tileParcel: tileParcel);
+        return _lookupColorado(
+          lat,
+          lng,
+          address: address,
+          tileParcel: tileParcel,
+        );
       case _State.unknown:
         final result = await _lookupUtah(lat, lng, address: address);
         if (result.parcelInfo != null || result.rights.isNotEmpty) {
@@ -128,7 +133,7 @@ class WaterRightsClient {
     final rightsFuture = _utahWaterRights(lat, lng, basic);
     final lirFuture = basic != null
         ? _utahLirData(lat, lng, basic.county)
-        : Future<Map<String, dynamic>?>.value(null);
+        : Future<Map<String, dynamic>?>.value();
     final rights = await rightsFuture;
     final lir = await lirFuture;
 
@@ -139,7 +144,6 @@ class WaterRightsClient {
             city: basic.city,
             zip: basic.zip,
             county: basic.county,
-            state: 'UT',
             ownType: basic.ownType,
             countyUrl: lir?['ASSESSOR_SRC'] as String? ?? basic.countyUrl,
             acres: (lir?['PARCEL_ACRES'] as num?)?.toDouble(),
@@ -339,7 +343,9 @@ class WaterRightsClient {
         ownType: tileParcel['owner']?.toString(),
         polygonJson: '{}',
         acres: (tileParcel['landAcres'] as num?)?.toDouble(),
-        marketValue: double.tryParse(tileParcel['apprValTot']?.toString() ?? ''),
+        marketValue: double.tryParse(
+          tileParcel['apprValTot']?.toString() ?? '',
+        ),
         subdivName: tileParcel['subName']?.toString(),
         propClass: tileParcel['landUseDsc']?.toString(),
       );
@@ -610,8 +616,9 @@ class WaterRightsClient {
         return WaterRight.fromArcGis(attrs);
       }).toList();
       final seen = <String>{};
-      final deduped =
-          rights.where((r) => r.rightNumber.isEmpty || seen.add(r.rightNumber)).toList();
+      final deduped = rights
+          .where((r) => r.rightNumber.isEmpty || seen.add(r.rightNumber))
+          .toList();
       final first = deduped.first;
       return LookupResult(
         lat: first.podLat,
@@ -628,17 +635,18 @@ class WaterRightsClient {
   // ── DWRi change application scrape ────────────────────────────────────────
 
   Future<List<ChangeApplication>> fetchChangeApps(String wrNum) async {
-    final uri = Uri.parse(
-      'https://waterrights.utah.gov/asp_apps/wrprint/wrPrintAction.asp',
-    ).replace(
-      queryParameters: {
-        'action': 'tab_home',
-        'wrnum': wrNum,
-        'tab': 'home',
-        'companyid': '0',
-        'forPublicView': '0',
-      },
-    );
+    final uri =
+        Uri.parse(
+          'https://waterrights.utah.gov/asp_apps/wrprint/wrPrintAction.asp',
+        ).replace(
+          queryParameters: {
+            'action': 'tab_home',
+            'wrnum': wrNum,
+            'tab': 'home',
+            'companyid': '0',
+            'forPublicView': '0',
+          },
+        );
     try {
       final res = await http.get(uri).timeout(const Duration(seconds: 10));
       if (res.statusCode != 200) return [];
@@ -651,18 +659,18 @@ class WaterRightsClient {
 
   List<ChangeApplication> _parseChangeApps(String html) {
     final sectionMatch = RegExp(
-      r'<!-- changes -->(.*?)<!-- end of changes -->',
+      '<!-- changes -->(.*?)<!-- end of changes -->',
       dotAll: true,
     ).firstMatch(html);
     if (sectionMatch == null) return [];
     final raw = sectionMatch
         .group(1)!
-        .replaceAll(RegExp(r'<[^>]+>'), ' ')
+        .replaceAll(RegExp('<[^>]+>'), ' ')
         .replaceAll('&nbsp;', ' ')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
     final pattern = RegExp(
-      r'([a-z]\d+[a-z]?)\s+\(Filed:\s+(\d{2}/\d{2}/\d{4})\)\s+(Approved|Unapproved|Rejected|Withdrawn)',
+      '([a-z]\\d+[a-z]?)\\s+\\(Filed:\\s+(\\d{2}/\\d{2}/\\d{4})\\)\\s+(Approved|Unapproved|Rejected|Withdrawn)',
       caseSensitive: false,
     );
     return pattern
@@ -730,13 +738,13 @@ class _BasicParcel {
 
   const _BasicParcel({
     required this.parcelId,
+    required this.polygonJson,
     this.address,
     this.city,
     this.zip,
     this.county,
     this.ownType,
     this.countyUrl,
-    required this.polygonJson,
     this.acres,
     this.marketValue,
     this.subdivName,
