@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -42,6 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
           password: password,
         );
       }
+      TextInput.finishAutofillContext();
       if (mounted) context.go('/');
     } on FirebaseAuthException catch (e) {
       setState(() => _error = _friendlyError(e.code));
@@ -121,7 +123,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 horizontal: 20,
                                 vertical: 8,
                               ),
-                              child: Column(
+                              child: AutofillGroup(
+                                child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   const SizedBox(height: 16),
@@ -149,11 +152,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                     textInputAction: TextInputAction.next,
                                     keyboardType: TextInputType.emailAddress,
                                     autocorrect: false,
+                                    autofillHints: const [AutofillHints.email],
                                   ),
                                   const SizedBox(height: 16),
                                   TextField(
                                     controller: _passCtrl,
                                     textInputAction: TextInputAction.done,
+                                    autofillHints: const [AutofillHints.password],
                                     decoration: InputDecoration(
                                       prefixIcon: const Icon(
                                         Icons.lock_outline,
@@ -279,6 +284,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                   const SizedBox(height: 100),
                                 ],
+                                ),
                               ),
                             ),
                           ),
