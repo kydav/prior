@@ -184,6 +184,7 @@ class ParcelLayer {
   ) async {
     final uri = Uri.parse('$serviceUrl/query').replace(
       queryParameters: {
+        'where': '1=1',
         'geometry': '$minLng,$minLat,$maxLng,$maxLat',
         'geometryType': 'esriGeometryEnvelope',
         'spatialRel': 'esriSpatialRelIntersects',

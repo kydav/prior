@@ -169,6 +169,7 @@ class WaterRightsClient {
   Future<_BasicParcel?> _utahParcelBasic(double lat, double lng) async {
     final uri = Uri.parse('$_utahParcelUrl/query').replace(
       queryParameters: {
+        'where': '1=1',
         'geometry': '$lng,$lat',
         'geometryType': 'esriGeometryPoint',
         'spatialRel': 'esriSpatialRelIntersects',
@@ -181,7 +182,7 @@ class WaterRightsClient {
       },
     );
     try {
-      final res = await http.get(uri).timeout(const Duration(seconds: 10));
+      final res = await http.get(uri).timeout(const Duration(seconds: 30));
       if (res.statusCode != 200) return null;
       final json = jsonDecode(res.body) as Map<String, dynamic>;
       final features = json['features'] as List?;
@@ -223,6 +224,7 @@ class WaterRightsClient {
           '$_utahLirBase/Parcels_${svc}_LIR/FeatureServer/0/query',
         ).replace(
           queryParameters: {
+            'where': '1=1',
             'geometry': '$lng,$lat',
             'geometryType': 'esriGeometryPoint',
             'spatialRel': 'esriSpatialRelIntersects',
@@ -234,7 +236,7 @@ class WaterRightsClient {
           },
         );
     try {
-      final res = await http.get(uri).timeout(const Duration(seconds: 10));
+      final res = await http.get(uri).timeout(const Duration(seconds: 30));
       if (res.statusCode != 200) return null;
       final json = jsonDecode(res.body) as Map<String, dynamic>;
       final features = json['features'] as List?;
@@ -472,6 +474,7 @@ class WaterRightsClient {
   Future<String?> _plssAtPoint(double lat, double lng) async {
     final uri = Uri.parse('$_blmPlssUrl/query').replace(
       queryParameters: {
+        'where': '1=1',
         'geometry': '$lng,$lat',
         'geometryType': 'esriGeometryPoint',
         'spatialRel': 'esriSpatialRelIntersects',
@@ -553,7 +556,7 @@ class WaterRightsClient {
       },
     );
     try {
-      final res = await http.get(uri).timeout(const Duration(seconds: 10));
+      final res = await http.get(uri).timeout(const Duration(seconds: 30));
       if (res.statusCode != 200) return null;
       final json = jsonDecode(res.body) as Map<String, dynamic>;
       final features = json['features'] as List?;

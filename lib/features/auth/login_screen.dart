@@ -125,165 +125,175 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               child: AutofillGroup(
                                 child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'Welcome Back',
-                                    style: Theme.of(context).textTheme.bodyLarge
-                                        ?.copyWith(fontWeight: FontWeight.bold),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Sign in to your account',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodyMedium,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  TextField(
-                                    controller: _emailCtrl,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Email',
-                                      prefixIcon: Icon(Icons.email_outlined),
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'Welcome Back',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                      textAlign: TextAlign.center,
                                     ),
-                                    textInputAction: TextInputAction.next,
-                                    keyboardType: TextInputType.emailAddress,
-                                    autocorrect: false,
-                                    autofillHints: const [AutofillHints.email],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  TextField(
-                                    controller: _passCtrl,
-                                    textInputAction: TextInputAction.done,
-                                    autofillHints: const [AutofillHints.password],
-                                    decoration: InputDecoration(
-                                      prefixIcon: const Icon(
-                                        Icons.lock_outline,
-                                      ),
-                                      labelText: 'Password',
-                                      suffixIcon: IconButton(
-                                        icon: isMasked
-                                            ? const Icon(
-                                                Icons.visibility_outlined,
-                                              )
-                                            : const Icon(
-                                                Icons.visibility_off_outlined,
-                                              ),
-                                        onPressed: () {
-                                          setState(() {
-                                            isMasked = !isMasked;
-                                          });
-                                        },
-                                      ),
-                                    ),
-
-                                    obscureText: isMasked,
-                                    onSubmitted: (_) => _submit(),
-                                  ),
-
-                                  if (_error != null) ...[
                                     const SizedBox(height: 8),
                                     Text(
-                                      _error!,
-                                      style: const TextStyle(
-                                        color: Colors.red,
-                                        fontSize: 13,
-                                      ),
+                                      'Sign in to your account',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium,
+                                      textAlign: TextAlign.center,
                                     ),
-                                  ],
-                                  const SizedBox(height: 8),
-                                  TextButton(
-                                    onPressed: () async {
-                                      if (_emailCtrl.text.isEmpty) {
-                                        setState(() {
-                                          _error = 'Please enter your email.';
-                                        });
-                                        return;
-                                      }
-                                      try {
-                                        await FirebaseAuth.instance
-                                            .sendPasswordResetEmail(
-                                              email: _emailCtrl.text.trim(),
-                                            );
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                'Password reset email sent.',
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                      } on FirebaseAuthException catch (e) {
-                                        setState(() {
-                                          _error = _friendlyError(e.code);
-                                        });
-                                      }
-                                    },
-                                    child: const Text('Forgot password?'),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  FilledButton(
-                                    onPressed: _loading ? null : _submit,
-                                    style: FilledButton.styleFrom(
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
+                                    const SizedBox(height: 16),
+                                    TextField(
+                                      controller: _emailCtrl,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Email',
+                                        prefixIcon: Icon(Icons.email_outlined),
                                       ),
+                                      textInputAction: TextInputAction.next,
+                                      keyboardType: TextInputType.emailAddress,
+                                      autocorrect: false,
+                                      autofillHints: const [
+                                        AutofillHints.email,
+                                      ],
                                     ),
-                                    child: _loading
-                                        ? const SizedBox(
-                                            height: 20,
-                                            width: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                            ),
-                                          )
-                                        : Text(
-                                            _isSignUp
-                                                ? 'Create account'
-                                                : 'Sign in',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-
-                                              ///color: Colors.white,
-                                            ),
-                                          ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        _isSignUp
-                                            ? 'Already have an account?'
-                                            : "Don't have an account?",
-                                        style: const TextStyle(
-                                          color: Colors.grey,
+                                    const SizedBox(height: 16),
+                                    TextField(
+                                      controller: _passCtrl,
+                                      textInputAction: TextInputAction.done,
+                                      autofillHints: const [
+                                        AutofillHints.password,
+                                      ],
+                                      decoration: InputDecoration(
+                                        prefixIcon: const Icon(
+                                          Icons.lock_outline,
+                                        ),
+                                        labelText: 'Password',
+                                        suffixIcon: IconButton(
+                                          icon: isMasked
+                                              ? const Icon(
+                                                  Icons.visibility_outlined,
+                                                )
+                                              : const Icon(
+                                                  Icons.visibility_off_outlined,
+                                                ),
+                                          onPressed: () {
+                                            setState(() {
+                                              isMasked = !isMasked;
+                                            });
+                                          },
                                         ),
                                       ),
-                                      TextButton(
-                                        onPressed: () => setState(() {
-                                          _isSignUp = !_isSignUp;
-                                          _error = null;
-                                        }),
-                                        child: Text(
-                                          _isSignUp ? 'Sign in' : 'Sign up',
-                                          style: TextStyle(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.inversePrimary,
-                                          ),
+
+                                      obscureText: isMasked,
+                                      onSubmitted: (_) => _submit(),
+                                    ),
+
+                                    if (_error != null) ...[
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        _error!,
+                                        style: const TextStyle(
+                                          color: Colors.red,
+                                          fontSize: 13,
                                         ),
                                       ),
                                     ],
-                                  ),
-                                  const SizedBox(height: 100),
-                                ],
+                                    const SizedBox(height: 8),
+                                    TextButton(
+                                      onPressed: () async {
+                                        if (_emailCtrl.text.isEmpty) {
+                                          setState(() {
+                                            _error = 'Please enter your email.';
+                                          });
+                                          return;
+                                        }
+                                        try {
+                                          await FirebaseAuth.instance
+                                              .sendPasswordResetEmail(
+                                                email: _emailCtrl.text.trim(),
+                                              );
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Password reset email sent.',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        } on FirebaseAuthException catch (e) {
+                                          setState(() {
+                                            _error = _friendlyError(e.code);
+                                          });
+                                        }
+                                      },
+                                      child: const Text('Forgot password?'),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    FilledButton(
+                                      onPressed: _loading ? null : _submit,
+                                      style: FilledButton.styleFrom(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                      ),
+                                      child: _loading
+                                          ? const SizedBox(
+                                              height: 20,
+                                              width: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : Text(
+                                              _isSignUp
+                                                  ? 'Create account'
+                                                  : 'Sign in',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          _isSignUp
+                                              ? 'Already have an account?'
+                                              : "Don't have an account?",
+                                          style: const TextStyle(
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                        TextButton(
+                                          onPressed: () => setState(() {
+                                            _isSignUp = !_isSignUp;
+                                            _error = null;
+                                          }),
+                                          child: Text(
+                                            _isSignUp ? 'Sign in' : 'Sign up',
+                                            style: TextStyle(
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.inversePrimary,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 100),
+                                  ],
                                 ),
                               ),
                             ),

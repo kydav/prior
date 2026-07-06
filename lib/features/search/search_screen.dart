@@ -599,15 +599,8 @@ class _ParcelInfoSheet extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              icon: const Icon(
-                Icons.open_in_browser,
-                size: 16,
-                color: Colors.white,
-              ),
-              label: const Text(
-                'View county assessor records',
-                style: TextStyle(color: Colors.white),
-              ),
+              icon: const Icon(Icons.open_in_browser, size: 16),
+              label: const Text('View county assessor records'),
               onPressed: () {
                 final url = Uri.tryParse(info!.countyUrl!);
                 if (url != null) {

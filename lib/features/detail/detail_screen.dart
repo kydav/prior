@@ -177,15 +177,8 @@ class _WaterRightCardState extends State<WaterRightCard> {
                         if (right.divisionOfWaterRightsUrl != null) ...[
                           const SizedBox(height: 12),
                           OutlinedButton.icon(
-                            icon: const Icon(
-                              Icons.open_in_browser,
-                              size: 16,
-                              color: Colors.white,
-                            ),
-                            label: const Text(
-                              'View DWRi record',
-                              style: TextStyle(color: Colors.white),
-                            ),
+                            icon: const Icon(Icons.open_in_browser, size: 16),
+                            label: const Text('View DWRi record'),
                             onPressed: () {
                               final url = Uri.tryParse(
                                 right.divisionOfWaterRightsUrl!,
