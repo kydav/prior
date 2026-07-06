@@ -166,8 +166,18 @@ class ParcelLayer {
         isFetching.value = false;
       }
     } catch (e) {
-      debugPrint('ParcelLayer onIdle error, will re-setup: $e');
-      _layerAdded = false;
+      final msg = e.toString();
+      if (msg.contains('Invalid size is used for setting the map view')) {
+        // Mapbox can emit this during the first layout pass after navigation.
+        // Ignore this idle tick; the next idle usually succeeds.
+        debugPrint(
+          'ParcelLayer onIdle skipped until map view has a valid size',
+        );
+        return;
+      }
+
+      // Keep layer state intact so subsequent idle events can recover naturally.
+      debugPrint('ParcelLayer onIdle error: $e');
     }
   }
 

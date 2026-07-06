@@ -31,6 +31,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   bool _searching = false;
   bool _showingLines = false;
   bool _locating = false;
+  bool _styleLoaded = false;
   String _currentStyle = MapboxStyles.STANDARD;
 
   Future<void> _onMapCreated(MapboxMap map) async {
@@ -69,9 +70,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Future<void> _onStyleLoaded(StyleLoadedEventData _) async {
-    if (_map == null) return;
-    await ParcelLayer.setup(_map!);
-    await _map!.location.updateSettings(
+    final map = _map;
+    if (map == null || !mounted) return;
+    _styleLoaded = true;
+    await ParcelLayer.setup(map);
+    if (!mounted || _map != map) return;
+    await map.location.updateSettings(
       LocationComponentSettings(
         enabled: true,
         puckBearingEnabled: true,
@@ -81,12 +85,24 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Future<void> _onMapIdle(MapIdleEventData _) async {
-    if (_map == null) return;
-    final camera = await _map!.getCameraState();
-    final atZoom = camera.zoom >= 12.5;
-    if (atZoom != _showingLines) setState(() => _showingLines = atZoom);
+    final map = _map;
+    if (map == null || !_styleLoaded || !mounted) return;
+    try {
+      final camera = await map.getCameraState();
+      if (!mounted || _map != map) return;
+      final atZoom = camera.zoom >= 12.5;
+      if (atZoom != _showingLines) setState(() => _showingLines = atZoom);
 
-    await ParcelLayer.onIdle(_map!);
+      await ParcelLayer.onIdle(map);
+    } catch (e) {
+      final msg = e.toString();
+      if (msg.contains('Invalid size is used for setting the map view')) {
+        // Mapbox can emit this while the native map view is still laying out.
+        // Ignore and let the next idle event retry.
+        return;
+      }
+      debugPrint('SearchScreen onMapIdle error: $e');
+    }
   }
 
   Future<void> _goToCurrentLocation() async {
@@ -111,8 +127,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           timeLimit: Duration(seconds: 10),
         ),
       );
-      if (_map != null && mounted) {
-        await _map!.flyTo(
+      final map = _map;
+      if (map != null && mounted) {
+        await map.flyTo(
           CameraOptions(
             center: Point(coordinates: Position(pos.longitude, pos.latitude)),
             zoom: 15,
@@ -173,7 +190,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             result.lat != null &&
             result.lng != null &&
             _map != null) {
-          await _map!.flyTo(
+          final map = _map;
+          if (map == null) return;
+          await map.flyTo(
             CameraOptions(
               center: Point(coordinates: Position(result.lng!, result.lat!)),
               zoom: 16,
@@ -198,9 +217,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         current: _currentStyle,
         onSelected: (style) async {
           Navigator.pop(context);
-          if (_map == null || style == _currentStyle) return;
+          final map = _map;
+          if (map == null || style == _currentStyle || !mounted) return;
           setState(() => _currentStyle = style);
-          await _map!.loadStyleURI(style);
+          await map.loadStyleURI(style);
         },
       ),
     );
@@ -390,6 +410,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _map = null;
+    _styleLoaded = false;
     ParcelLayer.reset();
     super.dispose();
   }
