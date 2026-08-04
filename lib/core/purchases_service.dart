@@ -6,8 +6,8 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 
 // Set this to your RevenueCat API key from the RC dashboard.
 final kRcApiKey = Platform.isIOS
-    ? 'appl_pWCEVUfkvhcAmjUrkJKPJWDssTH'
-    : 'goog_NNTOeRWLDWDDCIVJpqZdoFQGYzM';
+    ? 'appl_lXKdMxtlGlNOsvgRhTnlfmOYBai'
+    : 'goog_RkQurJPKVtihtxjqvYDyfLWXGvd';
 
 // Must match the entitlement identifier you create in RevenueCat.
 const kProEntitlement = 'Prior Pro';
