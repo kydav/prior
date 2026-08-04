@@ -1,6 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:prior/core/lookup_counter.dart';
+import 'package:prior/core/purchases_service.dart';
+import 'package:prior/features/paywall/paywall_sheet.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -45,7 +49,9 @@ class ProfileScreen extends StatelessWidget {
             trailing: const Icon(Icons.chevron_right, size: 18),
             onTap: () => _sendPasswordReset(context, email),
           ),
-          const Divider(indent: 56, height: 1),
+          const SizedBox(height: 10),
+          _SubscriptionTile(),
+          const SizedBox(height: 10),
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Sign out'),
@@ -186,5 +192,95 @@ class ProfileScreen extends StatelessWidget {
         ),
       );
     }
+  }
+}
+
+class _SubscriptionTile extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+    return FutureBuilder(
+      future: ref.read(isSubscribedProvider.future),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        } else {
+          final isPro = snapshot.data ?? false;
+          if (isPro) {
+            return Container(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Icon(Icons.verified_outlined, color: cs.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Prior Pro',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        Text(
+                          'Active subscription',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.check_circle, color: cs.primary),
+                ],
+              ),
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    Icon(Icons.lock_outline, color: cs.onSurfaceVariant),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Free plan',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          Text(
+                            '${LookupCounter.freeLimit} lookups included',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              FilledButton.icon(
+                onPressed: () => showPaywallSheet(context),
+                icon: const Icon(Icons.star_outline),
+                label: const Text('Upgrade to Prior Pro'),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                ),
+              ),
+            ],
+          );
+        }
+      },
+    );
   }
 }
