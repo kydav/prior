@@ -11,7 +11,10 @@ Future<void> showPaywallSheet(BuildContext context) {
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => const _PaywallSheet(),
+    builder: (_) => const Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Align(alignment: Alignment.bottomCenter, child: _PaywallSheet()),
+    ),
   );
 }
 

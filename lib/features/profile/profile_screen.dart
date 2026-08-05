@@ -200,7 +200,7 @@ class _SubscriptionTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     return FutureBuilder(
-      future: ref.read(isSubscribedProvider.future),
+      future: ref.watch(isSubscribedProvider.future),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -269,12 +269,15 @@ class _SubscriptionTile extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              FilledButton.icon(
-                onPressed: () => showPaywallSheet(context),
-                icon: const Icon(Icons.star_outline),
-                label: const Text('Upgrade to Prior Pro'),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                child: FilledButton.icon(
+                  onPressed: () => showPaywallSheet(context),
+                  icon: const Icon(Icons.star_outline),
+                  label: const Text('Upgrade to Prior Pro'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                  ),
                 ),
               ),
             ],
