@@ -78,12 +78,14 @@ jobs:
         with:
           name: release-aab
           path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 1
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 1
 
       # ── Upload to Google Play ────────────────────────────────────────────────
       # Required secret:
