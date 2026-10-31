@@ -32,7 +32,7 @@ states where a buyer has no easy way to see this.
 - ✅ **Saved lookups** finished: name, note, swipe to delete, re-runs fresh. Deploy `firestore.rules` for `users/{uid}/saved`.
 - ✅ Fixed "Senior" badge (never showed) and "active" status for Colorado.
 - ⬜ Move Utah and Colorado onto `StateSource`.
-- ⬜ Idaho parcels: county files → PMTiles.
+- ✅ Idaho parcels: outlines from IDWR's statewide parcel service (1.17M parcels); address/acres/value from Idaho ITS public parcels where counties publish them.
 
 Every new state needs the same five pieces, so they become a pattern rather than
 more branches in one file.

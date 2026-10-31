@@ -2,9 +2,14 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:prior/core/states/state_outlines.dart';
 
 const _utahParcelUrl =
     'https://services1.arcgis.com/99lidPhWCzftIe9K/arcgis/rest/services/UtahStatewideParcels/FeatureServer/0';
+
+// Idaho: IDWR's statewide compilation of county assessor parcels.
+const _idahoParcelUrl =
+    'https://gis.idwr.idaho.gov/hosting/rest/services/Reference/Parcels/FeatureServer/0';
 
 const _sourceId = 'parcel-boundaries';
 const _layerId = 'parcel-lines';
@@ -110,13 +115,19 @@ class ParcelLayer {
         return;
       }
 
-      // Outside supported states: clear GeoJSON layer.
-      if (!_isUtahCenter(lat, lng)) {
+      // Utah and Idaho: parcel GeoJSON from ArcGIS. Idaho first, since
+      // Utah's box overlaps the border by a hair.
+      final String serviceUrl;
+      if (inState('ID', lat, lng)) {
+        serviceUrl = _idahoParcelUrl;
+      } else if (_isUtahCenter(lat, lng)) {
+        serviceUrl = _utahParcelUrl;
+      } else {
+        // Outside supported states: clear GeoJSON layer.
         await _setData(map, '{"type":"FeatureCollection","features":[]}');
         return;
       }
 
-      // Utah: fetch parcel GeoJSON from ArcGIS.
       if (isFetching.value) return;
 
       final bounds = await map.coordinateBoundsForCamera(
@@ -149,7 +160,7 @@ class ParcelLayer {
       isFetching.value = true;
       try {
         final geojson = await _fetchParcelGeoJson(
-          _utahParcelUrl,
+          serviceUrl,
           minLng,
           minLat,
           maxLng,

@@ -6,14 +6,23 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:prior/core/states/state_outlines.dart';
 import 'package:prior/core/states/state_source.dart';
+import 'package:prior/core/water_rights_client.dart' show ParcelInfo;
 import 'package:prior/data/water_right.dart';
 
 /// Idaho: IDWR's points of diversion for licensed and decreed rights
-/// (gis.idwr.idaho.gov Allocation/WaterRightPods). Idaho has no free
-/// statewide parcel layer, so results are by distance from the point
-/// rather than by parcel.
+/// (gis.idwr.idaho.gov Allocation/WaterRightPods), found by distance from
+/// the point, plus the parcel there from IDWR's statewide parcel layer.
 class IdahoSource extends StateSource {
   const IdahoSource();
+
+  /// IDWR's compilation of county assessor parcels (outline, PIN, county).
+  static const _parcelUrl =
+      'https://gis.idwr.idaho.gov/hosting/rest/services/Reference/Parcels/FeatureServer/0';
+
+  /// Idaho ITS public parcels: address, acres and value, for the counties
+  /// that publish them.
+  static const _publicParcelUrl =
+      'https://services1.arcgis.com/CNPdEkvnGl65jCX8/arcgis/rest/services/Public_Idaho_Parcels_/FeatureServer/7';
 
   static const _podUrl =
       'https://gis.idwr.idaho.gov/hosting/rest/services/Allocation/WaterRightPods/FeatureServer/0';
@@ -57,9 +66,9 @@ class IdahoSource extends StateSource {
         rights: rights.take(50).toList(),
         note:
             'Idaho: rights with a point of diversion within '
-            '${_describe(radius)} of this spot, nearest first. Idaho has no '
-            'free statewide parcel map yet, so check the place of use on '
-            'the IDWR report.',
+            '${_describe(radius)} of this spot, nearest first. A right can '
+            "serve land away from where it's diverted, so check the place "
+            'of use on the IDWR report.',
       );
     }
     return (
@@ -75,6 +84,73 @@ class IdahoSource extends StateSource {
       : meters >= 800
       ? '½ mile'
       : '$meters m';
+
+  @override
+  Future<ParcelInfo?> parcelAt(double lat, double lng) async {
+    final results = await Future.wait([
+      _attributesAt(_parcelUrl, lat, lng, 'PIN,COUNTY'),
+      _attributesAt(
+        _publicParcelUrl,
+        lat,
+        lng,
+        'PARCEL_ID,County,SITE_ADD,SITE_CITY,SITE_ZIP,ASR_ACRES,VAL_TOTAL,'
+        'ASR_CATS,WEBSITE',
+      ),
+    ]);
+    final base = results[0];
+    final extra = results[1];
+    if (base == null && extra == null) return null;
+    String? s(Map<String, dynamic>? m, String k) {
+      final v = m?[k]?.toString().trim();
+      return v == null || v.isEmpty || v == 'null' ? null : v;
+    }
+
+    return ParcelInfo(
+      parcelId: s(extra, 'PARCEL_ID') ?? s(base, 'PIN') ?? '',
+      address: s(extra, 'SITE_ADD'),
+      city: s(extra, 'SITE_CITY'),
+      zip: s(extra, 'SITE_ZIP'),
+      county: s(extra, 'County') ?? s(base, 'COUNTY'),
+      state: 'ID',
+      countyUrl: s(extra, 'WEBSITE'),
+      acres: (extra?['ASR_ACRES'] as num?)?.toDouble(),
+      marketValue: (extra?['VAL_TOTAL'] as num?)?.toDouble(),
+      propClass: s(extra, 'ASR_CATS'),
+    );
+  }
+
+  /// The first feature's attributes at a point, or null.
+  static Future<Map<String, dynamic>?> _attributesAt(
+    String url,
+    double lat,
+    double lng,
+    String fields,
+  ) async {
+    final uri = Uri.parse('$url/query').replace(
+      queryParameters: {
+        'geometry': '$lng,$lat',
+        'geometryType': 'esriGeometryPoint',
+        'spatialRel': 'esriSpatialRelIntersects',
+        'inSR': '4326',
+        'outFields': fields,
+        'returnGeometry': 'false',
+        'f': 'json',
+      },
+    );
+    try {
+      final res = await http.get(uri).timeout(const Duration(seconds: 15));
+      if (res.statusCode != 200) return null;
+      final features =
+          (jsonDecode(res.body) as Map<String, dynamic>)['features'] as List?;
+      if (features == null || features.isEmpty) return null;
+      return Map<String, dynamic>.from(
+        (features.first as Map)['attributes'] as Map,
+      );
+    } catch (e) {
+      debugPrint('Idaho parcel error: $e');
+      return null;
+    }
+  }
 
   /// Rough meters to the point of diversion (fine for sorting nearby).
   static double _distance(double lat, double lng, WaterRight r) {

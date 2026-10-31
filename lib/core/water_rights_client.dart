@@ -131,11 +131,13 @@ class WaterRightsClient {
     String? address,
   }) async {
     final plssFuture = _plssAtPoint(lat, lng);
+    final parcelFuture = source.parcelAt(lat, lng);
     final found = await source.waterRightsNear(lat, lng);
     return LookupResult(
       lat: lat,
       lng: lng,
       address: address,
+      parcelInfo: await parcelFuture,
       plssDescription: await plssFuture,
       rights: found.rights,
       stateCode: source.code,

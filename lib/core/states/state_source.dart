@@ -1,4 +1,5 @@
 import 'package:prior/core/states/idaho_source.dart';
+import 'package:prior/core/water_rights_client.dart' show ParcelInfo;
 import 'package:prior/data/water_right.dart';
 
 /// One state's water-rights data, as a plug-in (docs/ROADMAP.md, Phase 1).
@@ -23,6 +24,9 @@ abstract class StateSource {
     double lat,
     double lng,
   );
+
+  /// The parcel at the point, when the state publishes parcels.
+  Future<ParcelInfo?> parcelAt(double lat, double lng) async => null;
 
   /// Where to look a right up by hand on the state's own site.
   String get officialSearchUrl;
