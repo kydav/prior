@@ -130,18 +130,16 @@ class WaterRightsClient {
     double lng, {
     String? address,
   }) async {
-    final results = await Future.wait([
-      _plssAtPoint(lat, lng),
-      source.waterRightsNear(lat, lng),
-    ]);
+    final plssFuture = _plssAtPoint(lat, lng);
+    final found = await source.waterRightsNear(lat, lng);
     return LookupResult(
       lat: lat,
       lng: lng,
       address: address,
-      plssDescription: results[0] as String?,
-      rights: results[1]! as List<WaterRight>,
+      plssDescription: await plssFuture,
+      rights: found.rights,
       stateCode: source.code,
-      coverageNote: source.coverageNote,
+      coverageNote: found.note,
     );
   }
 

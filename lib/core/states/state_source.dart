@@ -17,14 +17,15 @@ abstract class StateSource {
   /// Whether a point is in this state.
   bool contains(double lat, double lng);
 
-  /// Water rights whose point of diversion is near the point.
-  Future<List<WaterRight>> waterRightsNear(double lat, double lng);
+  /// Water rights whose point of diversion is near the point, nearest
+  /// first, with a note on how near (shown with the results).
+  Future<({List<WaterRight> rights, String? note})> waterRightsNear(
+    double lat,
+    double lng,
+  );
 
   /// Where to look a right up by hand on the state's own site.
   String get officialSearchUrl;
-
-  /// What this state's results can and can't tell you, shown with them.
-  String? get coverageNote => null;
 }
 
 /// States served through [StateSource], checked before Utah and Colorado.
