@@ -268,7 +268,7 @@ class _PaywallSheetState extends ConsumerState<_PaywallSheet> {
 
 const _features = [
   'Unlimited lookups every month',
-  'Utah & Colorado water rights data',
+  'Utah, Colorado & Idaho water rights data',
   'Parcel details, acreage & market value',
   'Tap-to-lookup on the map',
 ];

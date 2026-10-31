@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:prior/core/states/state_source.dart';
 import 'package:prior/data/water_right.dart';
 export 'package:prior/data/water_right.dart' show ChangeApplication;
 
@@ -8,8 +9,8 @@ export 'package:prior/data/water_right.dart' show ChangeApplication;
 const _mapboxToken =
     'pk.eyJ1Ijoia3lkYXYiLCJhIjoiY21xcjNid29sMGtwMzJxcHd2czd6NmQ5aSJ9.NnCfgYoj6EK8Wg9E_dJXGg';
 
-// Geocoding bbox covering Utah + Colorado
-const _westernBbox = '-114.053,36.992,-102.040,42.001';
+// Geocoding bbox covering every supported state (Utah, Colorado, Idaho).
+const _westernBbox = '-117.25,36.992,-102.040,49.001';
 
 // ── Utah ──────────────────────────────────────────────────────────────────────
 const _utahParcelUrl =
@@ -97,6 +98,10 @@ class WaterRightsClient {
     String? address,
     Map<String, dynamic>? tileParcel,
   }) async {
+    final source = stateSourceAt(lat, lng);
+    if (source != null) {
+      return _lookupWithSource(source, lat, lng, address: address);
+    }
     final state = _detectState(lat, lng);
 
     switch (state) {
@@ -116,6 +121,28 @@ class WaterRightsClient {
         }
         return _lookupColorado(lat, lng, address: address);
     }
+  }
+
+  /// A state served by a [StateSource] plug-in (Idaho, and new states).
+  Future<LookupResult> _lookupWithSource(
+    StateSource source,
+    double lat,
+    double lng, {
+    String? address,
+  }) async {
+    final results = await Future.wait([
+      _plssAtPoint(lat, lng),
+      source.waterRightsNear(lat, lng),
+    ]);
+    return LookupResult(
+      lat: lat,
+      lng: lng,
+      address: address,
+      plssDescription: results[0] as String?,
+      rights: results[1]! as List<WaterRight>,
+      stateCode: source.code,
+      coverageNote: source.coverageNote,
+    );
   }
 
   // ── Utah ───────────────────────────────────────────────────────────────────
@@ -807,6 +834,12 @@ class LookupResult {
   final List<WaterRight> rights;
   final String? errorMessage;
 
+  /// Two-letter state; from the parcel when there is one.
+  final String? stateCode;
+
+  /// What this state's results can and can't tell you (see StateSource).
+  final String? coverageNote;
+
   const LookupResult({
     this.lat,
     this.lng,
@@ -815,6 +848,8 @@ class LookupResult {
     this.parcelInfo,
     this.rights = const [],
     this.errorMessage,
+    this.stateCode,
+    this.coverageNote,
   });
 
   const LookupResult.error(String message)
@@ -824,7 +859,9 @@ class LookupResult {
       plssDescription = null,
       parcelInfo = null,
       rights = const [],
-      errorMessage = message;
+      errorMessage = message,
+      stateCode = null,
+      coverageNote = null;
 
   bool get hasError => errorMessage != null;
 }

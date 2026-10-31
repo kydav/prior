@@ -10,6 +10,18 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
+    // Saved lookups: the user's own list of places and notes.
+    match /users/{userId}/saved/{docId} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.get('note', '') is string
+        && request.resource.data.get('note', '').size() <= 2000
+        && request.resource.data.lat is number
+        && request.resource.data.lng is number;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

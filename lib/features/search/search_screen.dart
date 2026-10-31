@@ -7,6 +7,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:prior/core/lookup_counter.dart';
 import 'package:prior/core/parcel_layer.dart';
 import 'package:prior/core/purchases_service.dart';
+import 'package:prior/core/saved_lookups.dart';
 import 'package:prior/core/water_rights_client.dart';
 import 'package:prior/features/detail/detail_screen.dart' show WaterRightCard;
 import 'package:prior/features/paywall/paywall_sheet.dart';
@@ -207,6 +208,30 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
   }
 
+  /// Saved lookups; picking one looks it up again, fresh.
+  Future<void> _openSaved() async {
+    final picked = await context.push<SavedLookup>('/saved');
+    if (picked == null || !mounted) return;
+    final map = _map;
+    if (map != null) {
+      await map.flyTo(
+        CameraOptions(
+          center: Point(coordinates: Position(picked.lng, picked.lat)),
+          zoom: 16,
+        ),
+        MapAnimationOptions(duration: 1200),
+      );
+    }
+    await _runQuery(
+      () => WaterRightsClient.instance.lookupByCoords(
+        picked.lat,
+        picked.lng,
+        address: picked.title,
+      ),
+      isTap: true,
+    );
+  }
+
   void _showStyleSheet() {
     showModalBottomSheet(
       context: context,
@@ -294,6 +319,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         textInputAction: TextInputAction.search,
                         onSubmitted: (_) => _searchAddress(),
                       ),
+                    ),
+                    IconButton(
+                      tooltip: 'Saved lookups',
+                      icon: const Icon(Icons.bookmarks_outlined),
+                      onPressed: _openSaved,
                     ),
                     IconButton(
                       icon: const Icon(Icons.person),
@@ -594,6 +624,14 @@ class _ParcelInfoSheet extends StatelessWidget {
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
 
+        if (result != null && result!.lat != null) ...[
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _SaveButton(result: result!),
+          ),
+        ],
+
         const SizedBox(height: 16),
         const Divider(),
         const SizedBox(height: 8),
@@ -637,6 +675,16 @@ class _ParcelInfoSheet extends StatelessWidget {
         const Divider(),
         const SizedBox(height: 8),
 
+        if (result?.coverageNote != null) ...[
+          Text(
+            result!.coverageNote!,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: Colors.grey[400]),
+          ),
+          const SizedBox(height: 12),
+        ],
+
         // Water rights section
         if (rights.isEmpty)
           Padding(
@@ -648,8 +696,11 @@ class _ParcelInfoSheet extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'No private water rights found on this parcel. '
-                    'The property is likely served by city or municipal culinary water.',
+                    result?.coverageNote != null
+                        ? 'No water rights found near this spot.'
+                        : 'No private water rights found on this parcel. '
+                              'The property is likely served by city or '
+                              'municipal culinary water.',
                     style: Theme.of(
                       context,
                     ).textTheme.bodySmall?.copyWith(color: Colors.grey[400]),
@@ -713,6 +764,89 @@ class _SheetRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Keeps this lookup in Saved, with a name and note of the user's own.
+class _SaveButton extends StatefulWidget {
+  const _SaveButton({required this.result});
+
+  final LookupResult result;
+
+  @override
+  State<_SaveButton> createState() => _SaveButtonState();
+}
+
+class _SaveButtonState extends State<_SaveButton> {
+  bool _saved = false;
+
+  Future<void> _save() async {
+    final title = TextEditingController(
+      text: SavedLookups.suggestedTitle(widget.result),
+    );
+    final note = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Save lookup'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: title,
+              decoration: const InputDecoration(labelText: 'Name'),
+            ),
+            TextField(
+              controller: note,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Note (optional)',
+                hintText: 'e.g. Smith listing, ask about well share',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if ((ok ?? false) && mounted) {
+      final messenger = ScaffoldMessenger.of(context);
+      try {
+        await SavedLookups.instance.save(
+          widget.result,
+          title: title.text,
+          note: note.text,
+        );
+        if (mounted) setState(() => _saved = true);
+      } catch (_) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text("Couldn't save. Try again.")),
+        );
+      }
+    }
+    title.dispose();
+    note.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: _saved ? null : _save,
+      icon: Icon(
+        _saved ? Icons.bookmark : Icons.bookmark_add_outlined,
+        size: 18,
+      ),
+      label: Text(_saved ? 'Saved' : 'Save'),
     );
   }
 }

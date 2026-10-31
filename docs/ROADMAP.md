@@ -26,6 +26,14 @@ states where a buyer has no easy way to see this.
 
 ## Phase 1: Make adding a state cheap (refactor, about 1 week)
 
+**Progress (2026-10-31, v1.1.0):**
+- ✅ `StateSource` plug-in (`lib/core/states/`) and registry, with **Idaho live** through it (IDWR points of diversion within 250 m, PLSS, a coverage note).
+- ✅ State detection by real outlines: TIGERweb boundaries embedded, point-in-polygon.
+- ✅ **Saved lookups** finished: name, note, swipe to delete, re-runs fresh. Deploy `firestore.rules` for `users/{uid}/saved`.
+- ✅ Fixed "Senior" badge (never showed) and "active" status for Colorado.
+- ⬜ Move Utah and Colorado onto `StateSource`.
+- ⬜ Idaho parcels: county files → PMTiles.
+
 Every new state needs the same five pieces, so they become a pattern rather than
 more branches in one file.
 

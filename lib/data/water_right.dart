@@ -101,21 +101,42 @@ class WaterRight {
     this.divisionOfWaterRightsUrl,
   });
 
-  // PRIORITY is stored as an int YYYYMMDD (e.g. 20170327)
+  /// Priority before 1935: senior enough to usually be served in a dry year.
+  /// [priorityDate] is shown as MM/DD/YYYY, so the year is its last four
+  /// digits (the first four were being read before, which never parsed).
   bool get isSenior {
-    if (priorityDate == null) return false;
-    final year = int.tryParse(priorityDate!.substring(0, 4)) ?? 9999;
-    return year < 1935;
+    final year = RegExp(r'(\d{4})').allMatches(priorityDate ?? '').lastOrNull;
+    return year != null && int.parse(year.group(1)!) < 1935;
   }
 
+  /// Whether the right is in good standing. Each state words it differently
+  /// (Utah "Perfected", Colorado "Active", Idaho "Active · Decreed").
   bool get isActive {
-    if (status == null) return false;
-    final s = status!.toLowerCase();
-    return (s == 'approved' || s == 'perfected' || s == 'certificated') &&
-        !s.contains('lapsed') &&
-        !s.contains('expired') &&
-        !s.contains('disallowed') &&
-        !s.contains('forfeited');
+    final s = status?.toLowerCase();
+    if (s == null) return false;
+    const dead = [
+      'unapproved',
+      'lapsed',
+      'expired',
+      'disallowed',
+      'forfeited',
+      'inactive',
+      'historical',
+      'cancel',
+      'withdrawn',
+      'rejected',
+    ];
+    if (dead.any(s.contains)) return false;
+    const live = [
+      'approved',
+      'perfected',
+      'certificated',
+      'active',
+      'decreed',
+      'licensed',
+      'conditional',
+    ];
+    return live.any(s.contains);
   }
 
   factory WaterRight.fromArcGis(Map<String, dynamic> attrs) {
