@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:prior/core/water_hub_client.dart';
 import 'package:prior/core/water_rights_client.dart';
 import 'package:prior/data/water_right.dart';
@@ -107,6 +108,15 @@ class _WaterRightCardState extends State<WaterRightCard> {
             if (right.ownerName != null) _Row('Owner', right.ownerName!),
             if (right.plssLocation != null)
               _Row('Location', right.plssLocation!),
+            if (_utahWrPattern.hasMatch(right.rightNumber))
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.fact_check_outlined, size: 18),
+                  label: const Text('Check this right'),
+                  onPressed: () => context.push('/right/${right.rightNumber}'),
+                ),
+              ),
 
             // Pending change application badge (Utah only, lazy-loaded)
             if (_changeAppsFuture != null)

@@ -321,6 +321,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       ),
                     ),
                     IconButton(
+                      tooltip: 'Find water in an area',
+                      icon: const Icon(Icons.travel_explore),
+                      onPressed: () => context.push('/find-water'),
+                    ),
+                    IconButton(
                       tooltip: 'Saved lookups',
                       icon: const Icon(Icons.bookmarks_outlined),
                       onPressed: _openSaved,

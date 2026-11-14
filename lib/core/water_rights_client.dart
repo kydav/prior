@@ -535,6 +535,10 @@ class WaterRightsClient {
 
   // ── Geocoding ──────────────────────────────────────────────────────────────
 
+  /// A town, address or ZIP to coordinates (western states only).
+  Future<(double, double)?> geocodePlace(String place) =>
+      _geocodeAddress(place);
+
   Future<(double, double)?> _geocodeAddress(String address) async {
     final uri = Uri.parse(
       'https://api.mapbox.com/geocoding/v5/mapbox.places/'
