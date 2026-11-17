@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:go_router/go_router.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:prior/core/coach_marks.dart';
 import 'package:prior/core/lookup_counter.dart';
 import 'package:prior/core/parcel_layer.dart';
 import 'package:prior/core/purchases_service.dart';
@@ -29,6 +30,60 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     zoom: 10,
   );
   MapboxMap? _map;
+  final _searchKey = GlobalKey();
+  final _marketKey = GlobalKey();
+  final _savedKey = GlobalKey();
+  final _profileKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Let the map settle first so the tour isn't the first thing drawn.
+      await Future<void>.delayed(const Duration(milliseconds: 900));
+      if (mounted) await _showTour(onlyOnce: true);
+    });
+  }
+
+  Future<void> _showTour({required bool onlyOnce}) {
+    final steps = [
+      CoachMark(
+        target: _searchKey,
+        icon: Icons.search,
+        title: 'Look up any property',
+        body:
+            'Search an address, parcel number or water right number. Or zoom '
+            'in and tap any parcel on the map to see the water rights on it.',
+      ),
+      CoachMark(
+        target: _marketKey,
+        icon: Icons.travel_explore,
+        title: 'Find water to buy',
+        body:
+            'Search a town like Enoch to see every water right in its area: '
+            'who owns it, how senior it is and how much water it carries, '
+            "plus what's listed for sale. Tap any right for a buyer's check.",
+      ),
+      CoachMark(
+        target: _savedKey,
+        icon: Icons.bookmarks_outlined,
+        title: 'Saved lookups',
+        body: 'Properties you save are kept here to reopen anytime.',
+      ),
+      CoachMark(
+        target: _profileKey,
+        icon: Icons.person,
+        title: 'Your account',
+        body:
+            'Your plan, Prior Pro and account settings. You can replay this '
+            'tour from here.',
+      ),
+    ];
+    return onlyOnce
+        ? CoachMarks.showOnce(context, kSearchTour, steps)
+        : CoachMarks.show(context, steps);
+  }
+
   bool _searching = false;
   bool _showingLines = false;
   bool _locating = false;
@@ -295,6 +350,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               left: 16,
               right: 16,
               child: Material(
+                key: _searchKey,
                 elevation: 4,
                 borderRadius: BorderRadius.circular(12),
                 child: Row(
@@ -321,18 +377,21 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       ),
                     ),
                     IconButton(
-                      tooltip: 'Find water in an area',
-                      icon: const Icon(Icons.travel_explore),
-                      onPressed: () => context.push('/find-water'),
-                    ),
-                    IconButton(
+                      key: _savedKey,
                       tooltip: 'Saved lookups',
                       icon: const Icon(Icons.bookmarks_outlined),
                       onPressed: _openSaved,
                     ),
                     IconButton(
+                      key: _profileKey,
+                      tooltip: 'Profile',
                       icon: const Icon(Icons.person),
-                      onPressed: () => context.push('/profile'),
+                      onPressed: () async {
+                        final replay = await context.push<bool>('/profile');
+                        if (replay == true && mounted) {
+                          await _showTour(onlyOnce: false);
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -400,6 +459,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     ),
                   );
                 },
+              ),
+            ),
+            // Find water: the area market, up front rather than an icon
+            Positioned(
+              left: 16,
+              bottom: 142,
+              child: FloatingActionButton.extended(
+                key: _marketKey,
+                heroTag: 'findwater',
+                onPressed: () => context.push('/find-water'),
+                icon: const Icon(Icons.travel_explore),
+                label: const Text('Find water'),
               ),
             ),
             // Map type button

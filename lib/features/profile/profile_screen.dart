@@ -51,6 +51,12 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _SubscriptionTile(),
+          ListTile(
+            leading: const Icon(Icons.tips_and_updates_outlined),
+            title: const Text('Show the tour again'),
+            trailing: const Icon(Icons.chevron_right, size: 18),
+            onTap: () => context.pop(true),
+          ),
           const SizedBox(height: 10),
           ListTile(
             leading: const Icon(Icons.logout),
