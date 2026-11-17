@@ -19,9 +19,10 @@ class RightCheckScreen extends StatefulWidget {
 class _RightCheckScreenState extends State<RightCheckScreen> {
   late Future<AreaRight?> _right;
   Future<PriorityRank?>? _rank;
-  late final Future<List<ChangeApplication>> _changes = WaterRightsClient
-      .instance
-      .fetchChangeApps(widget.number);
+  late Future<List<ChangeApplication>> _changes = _fetchChanges();
+
+  Future<List<ChangeApplication>> _fetchChanges() => WaterRightsClient.instance
+      .fetchChangeApps(widget.number, throwOnError: true);
 
   @override
   void initState() {
@@ -67,7 +68,14 @@ class _RightCheckScreenState extends State<RightCheckScreen> {
               ),
             );
           }
-          return _Body(right: r, rank: _rank, changes: _changes);
+          return _Body(
+            right: r,
+            rank: _rank,
+            changes: _changes,
+            onRetryChanges: () => setState(() {
+              _changes = _fetchChanges();
+            }),
+          );
         },
       ),
     );
@@ -75,9 +83,15 @@ class _RightCheckScreenState extends State<RightCheckScreen> {
 }
 
 class _Body extends StatelessWidget {
-  const _Body({required this.right, required this.changes, this.rank});
+  const _Body({
+    required this.right,
+    required this.changes,
+    required this.onRetryChanges,
+    this.rank,
+  });
 
   final AreaRight right;
+  final VoidCallback onRetryChanges;
   final Future<PriorityRank?>? rank;
   final Future<List<ChangeApplication>> changes;
 
@@ -115,7 +129,7 @@ class _Body extends StatelessWidget {
         ?_typeNote(r),
         _quantity(r),
         _RankCheck(right: r, rank: rank),
-        _ChangesCheck(changes: changes),
+        _ChangesCheck(changes: changes, onRetry: onRetryChanges),
         _Check(
           level: _Level.info,
           title: 'Stays in area ${r.area}',
@@ -329,9 +343,10 @@ class _RankCheck extends StatelessWidget {
 }
 
 class _ChangesCheck extends StatelessWidget {
-  const _ChangesCheck({required this.changes});
+  const _ChangesCheck({required this.changes, required this.onRetry});
 
   final Future<List<ChangeApplication>> changes;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -340,6 +355,26 @@ class _ChangesCheck extends StatelessWidget {
       builder: (context, snap) {
         if (snap.connectionState != ConnectionState.done) {
           return const _Loading('Checking change applications…');
+        }
+        if (snap.hasError) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Expanded(
+                  child: _Check(
+                    level: _Level.warn,
+                    title: "Couldn't check change applications",
+                    body:
+                        "The state's records site didn't answer. Try again, "
+                        'or look under Changes in the state record.',
+                  ),
+                ),
+                TextButton(onPressed: onRetry, child: const Text('Retry')),
+              ],
+            ),
+          );
         }
         final all = snap.data ?? const <ChangeApplication>[];
         final pending = all.where((a) => a.isPending).toList();

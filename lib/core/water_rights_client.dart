@@ -668,7 +668,14 @@ class WaterRightsClient {
 
   // ── DWRi change application scrape ────────────────────────────────────────
 
-  Future<List<ChangeApplication>> fetchChangeApps(String wrNum) async {
+  /// Change applications on a Utah right, scraped from its DWRi page. The
+  /// page is sometimes slow, so it gets 20 s and one retry. Returns [] on
+  /// failure unless [throwOnError], for screens that must tell "none" from
+  /// "couldn't check".
+  Future<List<ChangeApplication>> fetchChangeApps(
+    String wrNum, {
+    bool throwOnError = false,
+  }) async {
     final uri =
         Uri.parse(
           'https://waterrights.utah.gov/asp_apps/wrprint/wrPrintAction.asp',
@@ -681,14 +688,19 @@ class WaterRightsClient {
             'forPublicView': '0',
           },
         );
-    try {
-      final res = await http.get(uri).timeout(const Duration(seconds: 10));
-      if (res.statusCode != 200) return [];
-      return _parseChangeApps(res.body);
-    } catch (e) {
-      debugPrint('Change app fetch error for $wrNum: $e');
-      return [];
+    Object? lastError;
+    for (var attempt = 0; attempt < 2; attempt++) {
+      try {
+        final res = await http.get(uri).timeout(const Duration(seconds: 20));
+        if (res.statusCode == 200) return _parseChangeApps(res.body);
+        lastError = 'HTTP ${res.statusCode}';
+      } catch (e) {
+        lastError = e;
+      }
+      debugPrint('Change app fetch error for $wrNum: $lastError');
     }
+    if (throwOnError) throw Exception('Change applications: $lastError');
+    return [];
   }
 
   List<ChangeApplication> _parseChangeApps(String html) {
