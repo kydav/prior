@@ -5,21 +5,28 @@ import 'package:prior/core/purchases_service.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-Future<void> showPaywallSheet(BuildContext context) {
+/// [reason] is the line under the title: why the sheet opened. Defaults to
+/// the monthly lookup limit.
+Future<void> showPaywallSheet(BuildContext context, {String? reason}) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => const Scaffold(
+    builder: (_) => Scaffold(
       backgroundColor: Colors.transparent,
-      body: Align(alignment: Alignment.bottomCenter, child: _PaywallSheet()),
+      body: Align(
+        alignment: Alignment.bottomCenter,
+        child: _PaywallSheet(reason: reason),
+      ),
     ),
   );
 }
 
 class _PaywallSheet extends ConsumerStatefulWidget {
-  const _PaywallSheet();
+  const _PaywallSheet({this.reason});
+
+  final String? reason;
 
   @override
   ConsumerState<_PaywallSheet> createState() => _PaywallSheetState();
@@ -137,7 +144,8 @@ class _PaywallSheetState extends ConsumerState<_PaywallSheet> {
           ),
           const SizedBox(height: 8),
           Text(
-            "You've used your ${LookupCounter.freeLimit} free lookups this month.",
+            widget.reason ??
+                "You've used your ${LookupCounter.freeLimit} free lookups this month.",
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
@@ -198,7 +206,7 @@ class _PaywallSheetState extends ConsumerState<_PaywallSheet> {
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Unlock unlimited lookups'),
+                  : const Text('Unlock Prior Pro'),
             ),
           ),
           const SizedBox(height: 12),
@@ -267,7 +275,9 @@ class _PaywallSheetState extends ConsumerState<_PaywallSheet> {
 }
 
 const _features = [
-  'Unlimited lookups every month',
+  'Unlimited lookups and right checks',
+  'Find water: every right in an area, with seller filters',
+  'Right checks: standing, priority rank & pending changes',
   'Utah, Colorado & Idaho water rights data',
   'Parcel details, acreage & market value',
   'Tap-to-lookup on the map',

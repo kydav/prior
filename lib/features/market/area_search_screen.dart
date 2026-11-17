@@ -1,24 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:prior/core/purchases_service.dart';
 import 'package:prior/core/water_hub_client.dart';
 import 'package:prior/core/water_market_client.dart';
 import 'package:prior/core/water_rights_client.dart';
 import 'package:prior/data/water_right.dart';
+import 'package:prior/features/paywall/paywall_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// "Who holds water around here?": every live right in a Utah water right
 /// area, filtered the way a buyer shops (use, source, seniority, size) and
 /// with what's listed for sale in the same area on top.
-class AreaSearchScreen extends StatefulWidget {
+class AreaSearchScreen extends ConsumerStatefulWidget {
   const AreaSearchScreen({this.initialArea, super.key});
 
   /// Opens straight to an area (from a right's "Other rights in area").
   final int? initialArea;
 
   @override
-  State<AreaSearchScreen> createState() => _AreaSearchScreenState();
+  ConsumerState<AreaSearchScreen> createState() => _AreaSearchScreenState();
 }
+
+/// Rights a free user sees per search before the Pro teaser.
+const _freePreview = 3;
 
 enum _Use { any, irrigation, municipal, domestic, stock }
 
@@ -26,7 +32,7 @@ enum _Source { any, ground, surface }
 
 enum _Sort { oldest, largest }
 
-class _AreaSearchScreenState extends State<AreaSearchScreen> {
+class _AreaSearchScreenState extends ConsumerState<AreaSearchScreen> {
   final _query = TextEditingController();
 
   int? _area;
@@ -230,13 +236,17 @@ class _AreaSearchScreenState extends State<AreaSearchScreen> {
           );
         }
         final shown = _filter(snap.data!);
+        final pro = ref.watch(isSubscribedProvider).valueOrNull ?? false;
+        final visible = pro
+            ? shown.length.clamp(0, 300)
+            : shown.length.clamp(0, _freePreview);
         return CustomScrollView(
           slivers: [
             SliverToBoxAdapter(child: _filters()),
             SliverToBoxAdapter(child: _summary(shown, snap.data!.length)),
             SliverToBoxAdapter(child: _forSale()),
             SliverList.separated(
-              itemCount: shown.length.clamp(0, 300),
+              itemCount: visible,
               separatorBuilder: (_, _) => const Divider(height: 1),
               itemBuilder: (context, i) => _RightTile(
                 right: shown[i],
@@ -244,7 +254,11 @@ class _AreaSearchScreenState extends State<AreaSearchScreen> {
                 onTap: () => context.push('/right/${shown[i].number}'),
               ),
             ),
-            if (shown.length > 300)
+            if (!pro && shown.length > _freePreview)
+              SliverToBoxAdapter(
+                child: _ProTeaser(hidden: shown.length - _freePreview),
+              ),
+            if (pro && shown.length > 300)
               const SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.all(16),
@@ -497,6 +511,49 @@ class _Message extends StatelessWidget {
             Icon(icon, size: 48, color: Theme.of(context).colorScheme.outline),
             const SizedBox(height: 12),
             Text(text, textAlign: TextAlign.center),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProTeaser extends StatelessWidget {
+  const _ProTeaser({required this.hidden});
+
+  final int hidden;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final fmt = NumberFormat.decimalPattern();
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Icon(Icons.lock_outline, color: cs.primary),
+            const SizedBox(height: 8),
+            Text(
+              '${fmt.format(hidden)} more rights match',
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'See every owner, priority date and amount in the area, and '
+              'check any right, with Prior Pro.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () => showPaywallSheet(
+                context,
+                reason:
+                    'See every water right in the area and check any of them.',
+              ),
+              child: const Text('Unlock Prior Pro'),
+            ),
           ],
         ),
       ),

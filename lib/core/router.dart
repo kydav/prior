@@ -35,8 +35,10 @@ final router = GoRouter(
     ),
     GoRoute(
       path: '/right/:number',
-      builder: (_, state) =>
-          RightCheckScreen(number: state.pathParameters['number']!),
+      builder: (_, state) => RightCheckScreen(
+        number: state.pathParameters['number']!,
+        free: state.uri.queryParameters['free'] == '1',
+      ),
     ),
     GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
   ],

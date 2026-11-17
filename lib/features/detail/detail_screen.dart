@@ -114,7 +114,8 @@ class _WaterRightCardState extends State<WaterRightCard> {
                 child: TextButton.icon(
                   icon: const Icon(Icons.fact_check_outlined, size: 18),
                   label: const Text('Check this right'),
-                  onPressed: () => context.push('/right/${right.rightNumber}'),
+                  onPressed: () =>
+                      context.push('/right/${right.rightNumber}?free=1'),
                 ),
               ),
 

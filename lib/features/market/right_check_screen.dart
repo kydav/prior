@@ -1,25 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:prior/core/lookup_counter.dart';
+import 'package:prior/core/lookup_gate.dart';
+import 'package:prior/core/purchases_service.dart';
 import 'package:prior/core/water_market_client.dart';
 import 'package:prior/core/water_rights_client.dart';
+import 'package:prior/features/paywall/paywall_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// "Is this right worth buying?": one Utah right with what a buyer, an
 /// agent or a city would ask about it, in plain English.
-class RightCheckScreen extends StatefulWidget {
-  const RightCheckScreen({required this.number, super.key});
+class RightCheckScreen extends ConsumerStatefulWidget {
+  const RightCheckScreen({required this.number, this.free = false, super.key});
 
   final String number;
 
+  /// Opened from a lookup the user already spent: doesn't count again.
+  final bool free;
+
   @override
-  State<RightCheckScreen> createState() => _RightCheckScreenState();
+  ConsumerState<RightCheckScreen> createState() => _RightCheckScreenState();
 }
 
-class _RightCheckScreenState extends State<RightCheckScreen> {
-  late Future<AreaRight?> _right;
+class _RightCheckScreenState extends ConsumerState<RightCheckScreen> {
+  /// Null while checking the free lookup count.
+  bool? _allowed;
+  Future<AreaRight?>? _right;
   Future<PriorityRank?>? _rank;
-  late Future<List<ChangeApplication>> _changes = _fetchChanges();
+  Future<List<ChangeApplication>>? _changes;
 
   Future<List<ChangeApplication>> _fetchChanges() => WaterRightsClient.instance
       .fetchChangeApps(widget.number, throwOnError: true);
@@ -27,57 +37,89 @@ class _RightCheckScreenState extends State<RightCheckScreen> {
   @override
   void initState() {
     super.initState();
-    _load();
+    _gate();
+  }
+
+  Future<void> _gate() async {
+    final ok = widget.free || await spendLookup(ref);
+    if (!mounted) return;
+    setState(() {
+      _allowed = ok;
+      if (ok) _load();
+    });
+  }
+
+  Future<void> _upgrade() async {
+    await showPaywallSheet(
+      context,
+      reason:
+          "You've used your ${LookupCounter.freeLimit} free lookups this "
+          'month. Each right check counts as one.',
+    );
+    if (!mounted) return;
+    final pro = await ref.read(isSubscribedProvider.future);
+    if (pro && mounted) {
+      setState(() {
+        _allowed = true;
+        _load();
+      });
+    }
   }
 
   void _load() {
     // The rank is chained rather than set in a then() with setState: a
     // setState callback that returns a Future throws in debug builds, which
     // failed the whole page.
-    _right = WaterMarketClient.instance.right(widget.number);
-    _rank = _right.then(
+    final right = WaterMarketClient.instance.right(widget.number);
+    _right = right;
+    _rank = right.then(
       (r) => r == null ? null : WaterMarketClient.instance.rank(r),
     );
+    _changes ??= _fetchChanges();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Right ${widget.number}')),
-      body: FutureBuilder<AreaRight?>(
-        future: _right,
-        builder: (context, snap) {
-          if (snap.hasError) {
-            return _Retry(
-              text: "Couldn't reach the state water rights data.",
-              onRetry: () => setState(_load),
-            );
-          }
-          if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final r = snap.data;
-          if (r == null) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Text(
-                  'No Utah water right ${widget.number} was found.',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            );
-          }
-          return _Body(
-            right: r,
-            rank: _rank,
-            changes: _changes,
-            onRetryChanges: () => setState(() {
-              _changes = _fetchChanges();
-            }),
-          );
-        },
-      ),
+      body: _allowed == null
+          ? const Center(child: CircularProgressIndicator())
+          : _allowed == false
+          ? _Locked(onUpgrade: _upgrade)
+          : FutureBuilder<AreaRight?>(
+              future: _right,
+              builder: (context, snap) {
+                if (snap.hasError) {
+                  return _Retry(
+                    text: "Couldn't reach the state water rights data.",
+                    onRetry: () => setState(_load),
+                  );
+                }
+                if (snap.connectionState != ConnectionState.done) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final r = snap.data;
+                if (r == null) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Text(
+                        'No Utah water right ${widget.number} was found.',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  );
+                }
+                return _Body(
+                  right: r,
+                  rank: _rank,
+                  changes: _changes!,
+                  onRetryChanges: () => setState(() {
+                    _changes = _fetchChanges();
+                  }),
+                );
+              },
+            ),
     );
   }
 }
@@ -500,3 +542,42 @@ class _Retry extends StatelessWidget {
 
 String _num(double v) =>
     v >= 100 ? v.round().toString() : v.toStringAsFixed(v < 10 ? 2 : 1);
+
+class _Locked extends StatelessWidget {
+  const _Locked({required this.onUpgrade});
+
+  final VoidCallback onUpgrade;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.lock_outline, size: 48, color: cs.primary),
+            const SizedBox(height: 12),
+            const Text(
+              "You've used this month's free lookups",
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Prior Pro checks any right: its standing, how it ranks for '
+              'water in its area, and any pending changes.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: onUpgrade,
+              child: const Text('Unlock Prior Pro'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
