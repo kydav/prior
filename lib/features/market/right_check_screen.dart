@@ -30,12 +30,13 @@ class _RightCheckScreenState extends State<RightCheckScreen> {
   }
 
   void _load() {
-    _right = WaterMarketClient.instance.right(widget.number).then((r) {
-      if (r != null && mounted) {
-        setState(() => _rank = WaterMarketClient.instance.rank(r));
-      }
-      return r;
-    });
+    // The rank is chained rather than set in a then() with setState: a
+    // setState callback that returns a Future throws in debug builds, which
+    // failed the whole page.
+    _right = WaterMarketClient.instance.right(widget.number);
+    _rank = _right.then(
+      (r) => r == null ? null : WaterMarketClient.instance.rank(r),
+    );
   }
 
   @override
