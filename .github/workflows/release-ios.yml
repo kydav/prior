@@ -109,7 +109,8 @@ jobs:
             --type ios \
             --file "$IPA_PATH" \
             --apiKey "$KEY_ID" \
-            --apiIssuer "$ISSUER_ID"
+            --apiIssuer "$ISSUER_ID" \
+            --apple-id 6784054308
 
       # ── Cleanup ──────────────────────────────────────────────────────────────
       - name: Remove signing keychain
