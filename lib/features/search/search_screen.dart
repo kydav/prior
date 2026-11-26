@@ -67,8 +67,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       CoachMark(
         target: _savedKey,
         icon: Icons.bookmarks_outlined,
-        title: 'Saved lookups',
-        body: 'Properties you save are kept here to reopen anytime.',
+        title: 'Saved',
+        body:
+            'Properties and water rights you save are kept here, with your '
+            'own notes, to reopen anytime.',
       ),
       CoachMark(
         target: _profileKey,
@@ -263,7 +265,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
   }
 
-  /// Saved lookups; picking one looks it up again, fresh.
+  /// Saved; picking a place looks it up again, fresh. (Saved rights open
+  /// their own right check from there.)
   Future<void> _openSaved() async {
     final picked = await context.push<SavedLookup>('/saved');
     if (picked == null || !mounted) return;
@@ -378,7 +381,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     ),
                     IconButton(
                       key: _savedKey,
-                      tooltip: 'Saved lookups',
+                      tooltip: 'Saved',
                       icon: const Icon(Icons.bookmarks_outlined),
                       onPressed: _openSaved,
                     ),

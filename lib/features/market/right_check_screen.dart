@@ -8,6 +8,7 @@ import 'package:prior/core/purchases_service.dart';
 import 'package:prior/core/water_market_client.dart';
 import 'package:prior/core/water_rights_client.dart';
 import 'package:prior/features/paywall/paywall_sheet.dart';
+import 'package:prior/features/saved/save_right_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// "Is this right worth buying?": one Utah right with what a buyer, an
@@ -81,7 +82,22 @@ class _RightCheckScreenState extends ConsumerState<RightCheckScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Right ${widget.number}')),
+      appBar: AppBar(
+        title: Text('Right ${widget.number}'),
+        actions: [
+          // Save it once it's loaded (Saved keeps a snapshot of the right).
+          if (_allowed ?? false)
+            FutureBuilder<AreaRight?>(
+              future: _right,
+              builder: (context, snap) {
+                final r = snap.data;
+                return r == null
+                    ? const SizedBox.shrink()
+                    : SaveRightButton(right: r);
+              },
+            ),
+        ],
+      ),
       body: _allowed == null
           ? const Center(child: CircularProgressIndicator())
           : _allowed == false

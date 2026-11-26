@@ -1,13 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:prior/core/purchases_service.dart';
+import 'package:prior/core/saved_lookups.dart';
 import 'package:prior/core/water_hub_client.dart';
 import 'package:prior/core/water_market_client.dart';
 import 'package:prior/core/water_rights_client.dart';
 import 'package:prior/data/water_right.dart';
 import 'package:prior/features/paywall/paywall_sheet.dart';
+import 'package:prior/features/saved/save_right_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// "Who holds water around here?": every live right in a Utah water right
@@ -43,6 +47,11 @@ class _AreaSearchScreenState extends ConsumerState<AreaSearchScreen> {
   String? _error;
   bool _finding = false;
 
+  /// The rights the user has saved, to mark them in the list. Null until
+  /// the first read, when the bookmarks stay disabled.
+  Set<String>? _saved;
+  StreamSubscription<Set<String>>? _savedSub;
+
   // Filters
   _Use _use = _Use.any;
   _Source _source = _Source.any;
@@ -55,6 +64,9 @@ class _AreaSearchScreenState extends ConsumerState<AreaSearchScreen> {
   @override
   void initState() {
     super.initState();
+    _savedSub = SavedLookups.instance.watchSavedRights().listen(
+      (s) => setState(() => _saved = s),
+    );
     final a = widget.initialArea;
     if (a != null) {
       _query.text = '$a';
@@ -64,6 +76,7 @@ class _AreaSearchScreenState extends ConsumerState<AreaSearchScreen> {
 
   @override
   void dispose() {
+    _savedSub?.cancel();
     _query.dispose();
     super.dispose();
   }
@@ -251,6 +264,7 @@ class _AreaSearchScreenState extends ConsumerState<AreaSearchScreen> {
               itemBuilder: (context, i) => _RightTile(
                 right: shown[i],
                 center: _center,
+                saved: _saved?.contains(shown[i].number),
                 onTap: () => context.push('/right/${shown[i].number}'),
               ),
             ),
@@ -447,11 +461,19 @@ class _AreaSearchScreenState extends ConsumerState<AreaSearchScreen> {
 }
 
 class _RightTile extends StatelessWidget {
-  const _RightTile({required this.right, required this.onTap, this.center});
+  const _RightTile({
+    required this.right,
+    required this.onTap,
+    required this.saved,
+    this.center,
+  });
 
   final AreaRight right;
   final (double, double)? center;
   final VoidCallback onTap;
+
+  /// Whether it's in Saved; null while that's still loading.
+  final bool? saved;
 
   @override
   Widget build(BuildContext context) {
@@ -472,19 +494,26 @@ class _RightTile extends StatelessWidget {
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
+      contentPadding: const EdgeInsetsDirectional.only(start: 16, end: 4),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            af == null ? '—' : '${_af(af)} af',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                af == null ? '—' : '${_af(af)} af',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              if (right.approvedOnly)
+                Text(
+                  'Not proven',
+                  style: TextStyle(fontSize: 11, color: Colors.orange[700]),
+                ),
+            ],
           ),
-          if (right.approvedOnly)
-            Text(
-              'Not proven',
-              style: TextStyle(fontSize: 11, color: Colors.orange[700]),
-            ),
+          SaveRightButton(right: right, saved: saved ?? false),
         ],
       ),
     );
