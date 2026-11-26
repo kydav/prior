@@ -18,8 +18,18 @@ service cloud.firestore {
         && request.resource.data.title.size() <= 200
         && request.resource.data.get('note', '') is string
         && request.resource.data.get('note', '').size() <= 2000
-        && request.resource.data.lat is number
-        && request.resource.data.lng is number;
+        && (
+          // A saved water right: its number; where it is when known.
+          (request.resource.data.get('kind', '') == 'right'
+            && request.resource.data.rightNumber is string
+            && request.resource.data.rightNumber.size() <= 40
+            && request.resource.data.get('lat', 0) is number
+            && request.resource.data.get('lng', 0) is number)
+          // A saved place (docs from before rights have no kind).
+          || (request.resource.data.get('kind', 'place') == 'place'
+            && request.resource.data.lat is number
+            && request.resource.data.lng is number)
+        );
     }
 
     match /{document=**} {

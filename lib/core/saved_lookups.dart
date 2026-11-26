@@ -1,10 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:prior/core/water_market_client.dart';
 import 'package:prior/core/water_rights_client.dart';
 
-/// A lookup the user kept: where it was, a name and note of their own, and a
-/// snapshot of what was found then (`users/{uid}/saved/{id}`). Opening it
-/// runs the lookup again, so the rights shown are always current.
+/// What a saved item is: a place (a parcel or point looked up on the map) or
+/// one water right (from Find water or a right check).
+enum SavedKind { place, right }
+
+/// Something the user kept (`users/{uid}/saved/{id}`), with a name and note
+/// of their own:
+/// - a **place**: where it was and the rights found there then. Opening it
+///   runs the lookup again, so the rights shown are always current.
+/// - a **right**: its number and a snapshot of what it was when saved (owner,
+///   status, quantity). Opening it runs the right check again.
+///
+/// Docs saved before rights could be saved have no `kind`: they're places.
 class SavedLookup {
   const SavedLookup({
     required this.id,
@@ -12,13 +22,20 @@ class SavedLookup {
     required this.lat,
     required this.lng,
     required this.savedAt,
+    this.kind = SavedKind.place,
     this.note = '',
     this.state = '',
     this.parcelId = '',
     this.rightNumbers = const [],
+    this.rightNumber = '',
+    this.owner = '',
+    this.status = '',
+    this.uses = '',
+    this.acreFeet,
   });
 
   final String id;
+  final SavedKind kind;
   final String title;
   final String note;
   final double lat;
@@ -26,14 +43,24 @@ class SavedLookup {
   final String state;
   final String parcelId;
 
-  /// The rights found when it was saved (to spot changes later).
+  /// The rights found when it was saved (to spot changes later). Places.
   final List<String> rightNumbers;
   final DateTime savedAt;
+
+  /// A saved right: its number and how it stood when saved.
+  final String rightNumber;
+  final String owner;
+  final String status;
+  final String uses;
+  final double? acreFeet;
+
+  bool get isRight => kind == SavedKind.right;
 
   factory SavedLookup.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data() ?? const {};
     return SavedLookup(
       id: doc.id,
+      kind: d['kind'] == 'right' ? SavedKind.right : SavedKind.place,
       title: d['title'] as String? ?? 'Saved lookup',
       note: d['note'] as String? ?? '',
       lat: (d['lat'] as num?)?.toDouble() ?? 0,
@@ -44,6 +71,11 @@ class SavedLookup {
         for (final r in d['rightNumbers'] as List? ?? const []) '$r',
       ],
       savedAt: (d['savedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      rightNumber: d['rightNumber'] as String? ?? '',
+      owner: d['owner'] as String? ?? '',
+      status: d['status'] as String? ?? '',
+      uses: d['uses'] as String? ?? '',
+      acreFeet: (d['acreFeet'] as num?)?.toDouble(),
     );
   }
 }
@@ -104,6 +136,55 @@ class SavedLookups {
       ],
       'savedAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  /// A default name for a saved right: its number and holder.
+  static String suggestedRightTitle(AreaRight right) => right.owner.isEmpty
+      ? 'Right ${right.number}'
+      : '${right.number} · ${right.owner}';
+
+  /// Keeps one water right. Its point of diversion is stored as where it is,
+  /// so the map can show it later.
+  Future<void> saveRight(
+    AreaRight right, {
+    required String title,
+    String note = '',
+  }) async {
+    final col = _col;
+    if (col == null) return;
+    await col.add({
+      'kind': 'right',
+      'title': title.trim().isEmpty ? suggestedRightTitle(right) : title.trim(),
+      'note': note.trim(),
+      if (right.lat != null) 'lat': right.lat,
+      if (right.lng != null) 'lng': right.lng,
+      'state': 'UT',
+      'rightNumber': right.number,
+      'area': right.area,
+      'owner': right.owner,
+      'status': right.statusLabel,
+      'uses': right.usesLabel,
+      if (right.acreFeet != null) 'acreFeet': right.acreFeet,
+      'savedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// The right numbers the user has saved, live (to show which are saved).
+  Stream<Set<String>> watchSavedRights() => watch().map(
+    (all) => {
+      for (final s in all)
+        if (s.isRight && s.rightNumber.isNotEmpty) s.rightNumber,
+    },
+  );
+
+  /// Un-saves [number] (every copy, if it was saved twice).
+  Future<void> deleteRight(String number) async {
+    final col = _col;
+    if (col == null) return;
+    final snap = await col.where('rightNumber', isEqualTo: number).get();
+    for (final d in snap.docs) {
+      await d.reference.delete();
+    }
   }
 
   Future<void> update(String id, {required String title, String? note}) async {
